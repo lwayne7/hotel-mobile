@@ -5,8 +5,6 @@ import {
   HeartOutlined,
   HeartFilled,
   ShareAltOutlined,
-  CalendarOutlined,
-  EnvironmentOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -24,10 +22,10 @@ const HotelDetail: React.FC = () => {
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [collected, setCollected] = useState(false);
-  const [checkIn, setCheckIn] = useState<dayjs.Dayjs | null>(
+  const [checkIn] = useState<dayjs.Dayjs | null>(
     searchParams.get('checkIn') ? dayjs(searchParams.get('checkIn')) : dayjs(),
   );
-  const [checkOut, setCheckOut] = useState<dayjs.Dayjs | null>(
+  const [checkOut] = useState<dayjs.Dayjs | null>(
     searchParams.get('checkOut') ? dayjs(searchParams.get('checkOut')) : dayjs().add(1, 'day'),
   );
   const [roomFilter, setRoomFilter] = useState<string | null>(null);
@@ -86,14 +84,11 @@ const HotelDetail: React.FC = () => {
     <div className="ctrip-detail">
       <header className="ctrip-detail-header ctrip-detail-header-overlay">
         <Button type="text" icon={<LeftOutlined />} onClick={() => navigate(-1)} className="ctrip-back-btn" />
-        <span className="ctrip-detail-title" title={hotel.nameCn}>
-          {hotel.nameCn}
-        </span>
         <div className="ctrip-detail-header-actions">
           <span className="ctrip-detail-action" onClick={() => setCollected(!collected)}>
             {collected ? <HeartFilled style={{ color: '#ff4d4f' }} /> : <HeartOutlined />}
           </span>
-          <span className="ctrip-detail-action" onClick={() => {}}>
+          <span className="ctrip-detail-action" onClick={() => { }}>
             <ShareAltOutlined />
           </span>
         </div>
@@ -131,18 +126,24 @@ const HotelDetail: React.FC = () => {
         </div>
         <div className="ctrip-detail-badges">
           <span className="ctrip-detail-badge-link">上海美景酒店榜 No.16 ›</span>
-          <span className="ctrip-detail-badge-gold">口碑榜 上榜酒店</span>
         </div>
 
         <div className="ctrip-detail-features-row">
-          <span className="ctrip-detail-feature">{openYear}年开业</span>
-          {features.slice(0, 4).map((f) => (
-            <span key={f} className="ctrip-detail-feature">
-              {f}
-            </span>
+          <div className="feature-item">
+            <span className="feature-icon">▤</span>
+            <span className="feature-text">{openYear}年开业</span>
+          </div>
+          <div className="feature-item">
+            <span className="feature-icon">◈</span>
+            <span className="feature-text">新中式风</span>
+          </div>
+          {features.slice(0, 2).map((f) => (
+            <div key={f} className="feature-item">
+              <span className="feature-icon">℗</span>
+              <span className="feature-text">{f}</span>
+            </div>
           ))}
-          <span className="ctrip-detail-feature-link">设施 ›</span>
-          <span className="ctrip-detail-feature-link">政策 ›</span>
+          <span className="ctrip-detail-feature-link">设施政策 ›</span>
         </div>
 
         <div className="ctrip-detail-score-location">
@@ -150,76 +151,84 @@ const HotelDetail: React.FC = () => {
             <div className="ctrip-detail-score-pill">
               <span className="ctrip-detail-score-num">{score}</span>
               <span className="ctrip-detail-score-label">超棒</span>
-              <span className="ctrip-detail-score-reviews">{reviewCount}条 ›</span>
             </div>
-            <div className="ctrip-detail-review-quote">"{reviewQuote}"</div>
+            <span className="ctrip-detail-score-reviews">{reviewCount}条点评 ›</span>
           </div>
+          <div className="ctrip-detail-review-quote">"{reviewQuote}"</div>
+          <div className="ctrip-detail-divider-v" />
           <div className="ctrip-detail-location-block">
-            <div className="ctrip-detail-transport">{transportText}</div>
-            <div className="ctrip-detail-addr">{hotel.address}</div>
+            <div className="ctrip-detail-addr">{transportText}</div>
             <span className="ctrip-detail-map-link">
-              <EnvironmentOutlined /> 地图
+              地图
             </span>
           </div>
         </div>
+      </div>
 
-        <div className="ctrip-detail-dates-row">
-          <CalendarOutlined className="ctrip-detail-dates-icon" />
-          <span className="ctrip-detail-dates-text">
-            {checkIn?.format('M月DD日')} {checkInLabel || ''} {nights}晚 {checkOut?.format('M月DD日')} {checkOutLabel || ''}
+      <div className="ctrip-detail-dates-card">
+        <div className="dates-row">
+          <span className="date-val">{checkIn?.format('MM月DD日')}</span>
+          <span className="date-label">{checkInLabel}</span>
+          <span className="date-nights">{nights}晚</span>
+          <span className="date-val">{checkOut?.format('MM月DD日')}</span>
+          <span className="date-label">{checkOutLabel}</span>
+          <span className="dates-arrow">›</span>
+        </div>
+        <div className="dates-tip">
+          <span className="tip-badge">🌙</span>
+          <span className="tip-text">当前已过0点，如需今天凌晨6点前入住，请选择"今天凌晨"</span>
+        </div>
+      </div>
+
+      <div className="ctrip-detail-room-filters">
+        {ROOM_FILTER_TAGS.map((tag) => (
+          <span
+            key={tag}
+            className={`ctrip-detail-room-filter-tag ${roomFilter === tag ? 'active' : ''}`}
+            onClick={() => setRoomFilter(roomFilter === tag ? null : tag)}
+          >
+            {tag}
           </span>
-          <span className="ctrip-detail-dates-arrow">›</span>
-        </div>
-        <div className="ctrip-detail-dates-tip">
-          <span className="ctrip-detail-tip-icon">🌙</span>
-          当前已过0点，如需今天凌晨6点前入住，请选择"今天凌晨"
-        </div>
+        ))}
+      </div>
 
-        <div className="ctrip-detail-room-filters">
-          {ROOM_FILTER_TAGS.map((tag) => (
-            <span
-              key={tag}
-              className={`ctrip-detail-room-filter-tag ${roomFilter === tag ? 'active' : ''}`}
-              onClick={() => setRoomFilter(roomFilter === tag ? null : tag)}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="ctrip-detail-rooms-title">房型与价格</div>
+      <div className="ctrip-detail-rooms">
         {roomTypes.length === 0 ? (
           <div className="ctrip-detail-no-room">暂无房型</div>
         ) : (
-          <div className="ctrip-detail-rooms">
+          <>
             {roomTypes.map((room: any, index: number) => (
               <div key={room.id ?? index} className="ctrip-detail-room">
-                {room.imageUrl && (
-                  <div className="ctrip-detail-room-thumb">
+                <div className="ctrip-detail-room-thumb">
+                  {room.imageUrl ? (
                     <img src={room.imageUrl} alt={room.name} />
-                  </div>
-                )}
+                  ) : hotel.images?.[0]?.imageUrl ? (
+                    <img src={hotel.images[0].imageUrl} alt={room.name} />
+                  ) : (
+                    <div className="room-thumb-placeholder">🛏️</div>
+                  )}
+                </div>
                 <div className="ctrip-detail-room-info">
                   <div className="ctrip-detail-room-name">{room.name}</div>
                   <div className="ctrip-detail-room-desc">
-                    {[room.bedType, room.roomSize && `${room.roomSize}㎡`, room.maxGuests && `${room.maxGuests}人入住`, room.floors]
-                      .filter(Boolean)
-                      .join(' ')}
+                    {[room.bedType, room.roomSize && `${room.roomSize}㎡`, room.maxGuests && `${room.maxGuests}人入住`].filter(Boolean).join(' ')}
                   </div>
-                  <div className="ctrip-detail-room-price-row">
-                    <span className="ctrip-price-num">¥{room.price}</span>
-                    {room.originalPrice && (
-                      <span className="ctrip-detail-room-original">¥{room.originalPrice}</span>
-                    )}
-                    <span className="ctrip-detail-room-unit">/晚</span>
+                  <div className="room-price-row">
+                    <div className="price-wrap">
+                      <span className="currency">¥</span>
+                      <span className="amount">{room.price}</span>
+                      <span className="suffix">起</span>
+                    </div>
+                    <Button type="primary" className="view-room-btn">查看房型</Button>
                   </div>
                 </div>
-                <span className="ctrip-detail-room-info-icon">ⓘ</span>
               </div>
             ))}
-          </div>
+          </>
         )}
       </div>
+
+      <div className="ctrip-detail-bottom-spacer" />
 
       <div className="ctrip-detail-bottom">
         <div className="ctrip-detail-bottom-left">
