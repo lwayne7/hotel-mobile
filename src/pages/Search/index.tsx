@@ -44,7 +44,9 @@ const Search: React.FC = () => {
   const [bannerHotels, setBannerHotels] = useState<any[]>([]);
   const [showDatePicker, setShowDatePicker] = useState<'checkIn' | 'checkOut' | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showCityModal, setShowCityModal] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
 
@@ -62,7 +64,43 @@ const Search: React.FC = () => {
     if (checkIn) params.set('checkIn', checkIn.format('YYYY-MM-DD'));
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     if (starRating > 0) params.set('starRating', String(starRating));
+    if (priceRange !== '不限') params.set('priceRange', priceRange);
     navigate(`/hotels?${params.toString()}`);
+  };
+
+  // GPS定位功能
+  const handleGpsLocation = () => {
+    if (!navigator.geolocation) {
+      message.error('您的浏览器不支持定位功能');
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGpsLoading(false);
+        // 简化处理：根据经纬度模拟城市匹配
+        const { longitude } = position.coords;
+        // 基于经度简单判断城市（实际应用需要使用地理编码API）
+        let detectedCity = '上海';
+        if (longitude < 110) detectedCity = '成都';
+        else if (longitude < 114) detectedCity = '广州';
+        else if (longitude < 117) detectedCity = '深圳';
+        else if (longitude < 120) detectedCity = '杭州';
+        else if (longitude < 122) detectedCity = '上海';
+        else detectedCity = '北京';
+        setCity(detectedCity);
+        message.success(`已定位到: ${detectedCity}`);
+      },
+      (error) => {
+        setGpsLoading(false);
+        if (error.code === 1) {
+          message.warning('定位权限被拒绝，请在浏览器设置中允许定位');
+        } else {
+          message.error('定位失败，请手动选择城市');
+        }
+      },
+      { timeout: 5000 }
+    );
   };
 
   const setCityAndSearch = (c: string) => {
@@ -138,10 +176,9 @@ const Search: React.FC = () => {
           ))}
         </div>
 
-        {/* 搜索表单 */}
         <div className="ctrip-search-form">
           <div className="ctrip-search-row city-row">
-            <div className="ctrip-search-city" onClick={() => message.info('点击可选择城市')}>
+            <div className="ctrip-search-city" onClick={() => setShowCityModal(true)}>
               <span className="city-text">{city || '选择城市'}</span>
             </div>
             <div className="ctrip-search-input-wrap">
@@ -155,11 +192,11 @@ const Search: React.FC = () => {
               />
             </div>
             <div
-              className="ctrip-search-gps"
-              onClick={() => message.info('定位功能：获取您当前位置附近的酒店')}
+              className={`ctrip-search-gps ${gpsLoading ? 'loading' : ''}`}
+              onClick={handleGpsLocation}
             >
-              <span className="gps-text">我的位置</span>
-              <EnvironmentOutlined />
+              <span className="gps-text">{gpsLoading ? '定位中...' : '我的位置'}</span>
+              <EnvironmentOutlined spin={gpsLoading} />
             </div>
           </div>
 
@@ -265,9 +302,9 @@ const Search: React.FC = () => {
           onChange={showDatePicker === 'checkIn' ? handleCheckInChange : handleCheckOutChange}
           disabledDate={(current) => {
             if (showDatePicker === 'checkIn') {
-              return current && current < dayjs().startOf('day');
+              return current < dayjs().startOf('day');
             }
-            return current && checkIn && current <= checkIn;
+            return !!checkIn && current <= checkIn;
           }}
           open
           style={{ width: '100%' }}
@@ -308,6 +345,31 @@ const Search: React.FC = () => {
               </span>
             ))}
           </div>
+        </div>
+      </Modal>
+
+      {/* 城市选择弹窗 */}
+      <Modal
+        title="选择城市"
+        open={showCityModal}
+        onCancel={() => setShowCityModal(false)}
+        footer={null}
+        centered
+        className="ctrip-city-modal"
+      >
+        <div className="city-modal-list">
+          {POPULAR_CITIES.map((c) => (
+            <span
+              key={c}
+              className={`city-modal-item ${city === c ? 'active' : ''}`}
+              onClick={() => {
+                setCity(c);
+                setShowCityModal(false);
+              }}
+            >
+              {c}
+            </span>
+          ))}
         </div>
       </Modal>
     </div>

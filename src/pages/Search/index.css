@@ -370,3 +370,128 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Date Icon */
+.date-icon {
+  color: var(--ctrip-blue);
+  font-size: 14px;
+  margin-left: 6px;
+}
+
+.date-col {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.date-col:hover {
+  opacity: 0.7;
+}
+
+/* Quick Tag Active */
+.quick-tag-item {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-tag-item.active {
+  background: var(--ctrip-blue-light);
+  color: var(--ctrip-blue);
+  border: 1px solid var(--ctrip-blue);
+}
+
+/* Filter Modal */
+.ctrip-filter-modal .filter-section {
+  margin-bottom: 24px;
+}
+
+.ctrip-filter-modal .filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ctrip-text-main);
+  margin-bottom: 12px;
+}
+
+.ctrip-filter-modal .filter-price-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ctrip-filter-modal .filter-price-tag {
+  padding: 8px 16px;
+  background: #f5f7fa;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.ctrip-filter-modal .filter-price-tag:hover {
+  background: var(--ctrip-blue-light);
+}
+
+.ctrip-filter-modal .filter-price-tag.active {
+  background: var(--ctrip-blue-light);
+  color: var(--ctrip-blue);
+  border-color: var(--ctrip-blue);
+}
+
+/* Date Modal */
+.ctrip-date-modal .ant-picker {
+  border: none;
+  box-shadow: none;
+}
+
+.ctrip-date-modal .ant-picker-dropdown {
+  position: static !important;
+}
+
+/* City Modal */
+.ctrip-city-modal .city-modal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ctrip-city-modal .city-modal-item {
+  padding: 10px 20px;
+  background: #f5f7fa;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.ctrip-city-modal .city-modal-item:hover {
+  background: var(--ctrip-blue-light);
+}
+
+.ctrip-city-modal .city-modal-item.active {
+  background: var(--ctrip-blue-light);
+  color: var(--ctrip-blue);
+  border-color: var(--ctrip-blue);
+}
+
+/* GPS Loading State */
+.ctrip-search-gps.loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ctrip-search-gps.loading .anticon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
