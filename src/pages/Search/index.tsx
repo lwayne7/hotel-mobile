@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Typography, message } from 'antd';
-import { EnvironmentOutlined } from '@ant-design/icons';
+import { Input, Button, Typography, message, DatePicker, Modal, Segmented } from 'antd';
+import { EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
 import dayjs from 'dayjs';
@@ -15,24 +15,38 @@ const TABS = [
   { key: 'homestay', label: '民宿' },
 ];
 
+const STAR_OPTIONS = [
+  { value: 0, label: '不限' },
+  { value: 2, label: '经济型' },
+  { value: 3, label: '舒适型' },
+  { value: 4, label: '高档型' },
+  { value: 5, label: '豪华型' },
+];
 
+const PRICE_OPTIONS = ['不限', '¥150以下', '¥150-300', '¥300-450', '¥450-600', '¥600以上'];
 
 const POPULAR_CITIES = [
   '北京', '上海', '广州', '深圳', '杭州', '成都', '西安', '三亚',
   '南京', '武汉', '厦门', '青岛', '重庆', '苏州', '长沙', '昆明',
 ];
 
-const QUICK_TAGS = ['免费停车场', '上海浦东国际机场', '上海虹桥国际机场', '外滩', '含早餐'];
+const QUICK_TAGS = ['亲子', '豪华', '免费停车场', '含早餐', '健身房'];
 
 const Search: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('domestic');
   const [keyword, setKeyword] = useState('');
   const [city, setCity] = useState('上海');
-  const [checkIn, _setCheckIn] = useState<dayjs.Dayjs | null>(dayjs());
-  const [checkOut, _setCheckOut] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'));
-  const [starRating, _setStarRating] = useState<number>(0);
+  const [checkIn, setCheckIn] = useState<dayjs.Dayjs | null>(dayjs());
+  const [checkOut, setCheckOut] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'));
+  const [starRating, setStarRating] = useState<number>(0);
+  const [priceRange, setPriceRange] = useState<string>('不限');
   const [bannerHotels, setBannerHotels] = useState<any[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState<'checkIn' | 'checkOut' | null>(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
 
   useEffect(() => {
     publicHotelApi
@@ -56,7 +70,33 @@ const Search: React.FC = () => {
     navigate(`/hotels?city=${encodeURIComponent(c)}`);
   };
 
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
 
+  const handleCheckInChange = (date: dayjs.Dayjs | null) => {
+    setCheckIn(date);
+    // 自动调整离店日期
+    if (date && checkOut && date.isAfter(checkOut)) {
+      setCheckOut(date.add(1, 'day'));
+    }
+    setShowDatePicker(null);
+  };
+
+  const handleCheckOutChange = (date: dayjs.Dayjs | null) => {
+    setCheckOut(date);
+    setShowDatePicker(null);
+  };
+
+  const getFilterSummary = () => {
+    const parts = [];
+    const starLabel = STAR_OPTIONS.find((s) => s.value === starRating)?.label;
+    if (starRating > 0 && starLabel) parts.push(starLabel);
+    if (priceRange !== '不限') parts.push(priceRange);
+    return parts.length > 0 ? parts.join('/') : '低价/高档';
+  };
 
   return (
     <div className="ctrip-search">
@@ -64,8 +104,12 @@ const Search: React.FC = () => {
         <div className="ctrip-search-page-title">酒店查询页</div>
       </header>
 
-      {/* 促销 Banner */}
-      <div className="ctrip-search-banner-wrap">
+      {/* 促销 Banner - 点击跳转第一个酒店 */}
+      <div
+        className="ctrip-search-banner-wrap"
+        onClick={() => bannerHotels[0] && navigate(`/hotels/${bannerHotels[0].id}`)}
+        style={{ cursor: bannerHotels[0] ? 'pointer' : 'default' }}
+      >
         <div className="ctrip-search-banner-inner">
           <div className="ctrip-search-banner-text">
             <span className="text-big">酒店7折起</span>
@@ -97,7 +141,7 @@ const Search: React.FC = () => {
         {/* 搜索表单 */}
         <div className="ctrip-search-form">
           <div className="ctrip-search-row city-row">
-            <div className="ctrip-search-city" onClick={() => message.info('可弹窗选择城市')}>
+            <div className="ctrip-search-city" onClick={() => message.info('点击可选择城市')}>
               <span className="city-text">{city || '选择城市'}</span>
             </div>
             <div className="ctrip-search-input-wrap">
@@ -110,7 +154,10 @@ const Search: React.FC = () => {
                 variant="borderless"
               />
             </div>
-            <div className="ctrip-search-gps" onClick={() => message.info('定位')}>
+            <div
+              className="ctrip-search-gps"
+              onClick={() => message.info('定位功能：获取您当前位置附近的酒店')}
+            >
               <span className="gps-text">我的位置</span>
               <EnvironmentOutlined />
             </div>
@@ -118,36 +165,46 @@ const Search: React.FC = () => {
 
           <div className="ctrip-search-divider" />
 
+          {/* 日期选择 */}
           <div className="ctrip-search-row date-row">
-            <div className="date-col">
+            <div className="date-col" onClick={() => setShowDatePicker('checkIn')}>
               <span className="date-label">入住</span>
               <div className="date-val-row">
                 <span className="date-val">{checkIn ? checkIn.format('MM月DD日') : '入住'}</span>
-                <span className="date-sub">{checkIn?.isSame(dayjs(), 'day') ? '今天' : ''}</span>
+                <span className="date-sub">{checkIn?.isSame(dayjs(), 'day') ? '今天' : checkIn?.isSame(dayjs().add(1, 'day'), 'day') ? '明天' : ''}</span>
+                <CalendarOutlined className="date-icon" />
               </div>
             </div>
             <div className="date-nights">
-              1晚
+              {nights}晚
             </div>
-            <div className="date-col">
+            <div className="date-col" onClick={() => setShowDatePicker('checkOut')}>
               <span className="date-label">离店</span>
               <div className="date-val-row">
                 <span className="date-val">{checkOut ? checkOut.format('MM月DD日') : '离店'}</span>
                 <span className="date-sub">{checkOut?.isSame(dayjs().add(1, 'day'), 'day') ? '明天' : ''}</span>
+                <CalendarOutlined className="date-icon" />
               </div>
             </div>
           </div>
 
           <div className="ctrip-search-divider" />
 
+          {/* 价格/星级筛选 */}
           <div className="ctrip-search-row price-row">
-            <div className="price-input" onClick={() => message.info('价格星级')}>
+            <div className="price-input" onClick={() => setShowFilterModal(true)}>
               <span className="price-val">价格/星级</span>
-              <span className="price-sub">低价/高档</span>
+              <span className="price-sub">{getFilterSummary()}</span>
             </div>
             <div className="quick-tags-clean">
-              {QUICK_TAGS.slice(0, 2).map((t) => (
-                <span key={t} className="quick-tag-item">{t}</span>
+              {QUICK_TAGS.slice(0, 3).map((t) => (
+                <span
+                  key={t}
+                  className={`quick-tag-item ${selectedTags.includes(t) ? 'active' : ''}`}
+                  onClick={() => toggleTag(t)}
+                >
+                  {t}
+                </span>
               ))}
             </div>
           </div>
@@ -193,8 +250,69 @@ const Search: React.FC = () => {
           </div>
         </section>
       )}
+
+      {/* 日期选择弹窗 */}
+      <Modal
+        title={showDatePicker === 'checkIn' ? '选择入住日期' : '选择离店日期'}
+        open={showDatePicker !== null}
+        onCancel={() => setShowDatePicker(null)}
+        footer={null}
+        centered
+        className="ctrip-date-modal"
+      >
+        <DatePicker
+          value={showDatePicker === 'checkIn' ? checkIn : checkOut}
+          onChange={showDatePicker === 'checkIn' ? handleCheckInChange : handleCheckOutChange}
+          disabledDate={(current) => {
+            if (showDatePicker === 'checkIn') {
+              return current && current < dayjs().startOf('day');
+            }
+            return current && checkIn && current <= checkIn;
+          }}
+          open
+          style={{ width: '100%' }}
+          getPopupContainer={(trigger) => trigger.parentElement!}
+        />
+      </Modal>
+
+      {/* 星级/价格筛选弹窗 */}
+      <Modal
+        title="筛选条件"
+        open={showFilterModal}
+        onCancel={() => setShowFilterModal(false)}
+        onOk={() => setShowFilterModal(false)}
+        okText="确定"
+        cancelText="重置"
+        centered
+        className="ctrip-filter-modal"
+      >
+        <div className="filter-section">
+          <div className="filter-label">酒店星级</div>
+          <Segmented
+            options={STAR_OPTIONS.map((s) => ({ value: s.value, label: s.label }))}
+            value={starRating}
+            onChange={(v) => setStarRating(v as number)}
+            block
+          />
+        </div>
+        <div className="filter-section">
+          <div className="filter-label">价格区间</div>
+          <div className="filter-price-tags">
+            {PRICE_OPTIONS.map((p) => (
+              <span
+                key={p}
+                className={`filter-price-tag ${priceRange === p ? 'active' : ''}`}
+                onClick={() => setPriceRange(p)}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
 
 export default Search;
+
