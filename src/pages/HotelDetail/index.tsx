@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Button, Rate, Spin, Carousel } from 'antd';
 import {
   LeftOutlined,
@@ -22,6 +22,7 @@ const HotelDetail: React.FC = () => {
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [collected, setCollected] = useState(false);
+  const [showNavHeader, setShowNavHeader] = useState(false);
   const [checkIn] = useState<dayjs.Dayjs | null>(
     searchParams.get('checkIn') ? dayjs(searchParams.get('checkIn')) : dayjs(),
   );
@@ -34,6 +35,17 @@ const HotelDetail: React.FC = () => {
   const today = dayjs().startOf('day');
   const checkInLabel = checkIn ? (checkIn.isSame(today, 'day') ? '今天' : checkIn.isSame(today.add(1, 'day'), 'day') ? '明天' : '') : '';
   const checkOutLabel = checkOut ? (checkOut.isSame(today, 'day') ? '今天' : checkOut.isSame(today.add(1, 'day'), 'day') ? '明天' : '') : '';
+
+  // Handle scroll to show/hide navigation header
+  const handleScroll = useCallback(() => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    setShowNavHeader(scrollTop > 200);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   useEffect(() => {
     if (!id) return;
@@ -82,6 +94,21 @@ const HotelDetail: React.FC = () => {
 
   return (
     <div className="ctrip-detail">
+      {/* Scroll-triggered Navigation Header with Hotel Name */}
+      <header className={`ctrip-detail-nav-header ${showNavHeader ? 'visible' : ''}`}>
+        <Button type="text" icon={<LeftOutlined />} onClick={() => navigate(-1)} className="ctrip-nav-back-btn" />
+        <div className="ctrip-nav-title">{hotel.nameCn}</div>
+        <div className="ctrip-nav-actions">
+          <span className="ctrip-nav-action" onClick={() => setCollected(!collected)}>
+            {collected ? <HeartFilled style={{ color: '#ff4d4f' }} /> : <HeartOutlined />}
+          </span>
+          <span className="ctrip-nav-action">
+            <ShareAltOutlined />
+          </span>
+        </div>
+      </header>
+
+      {/* Overlay Header on Image Gallery */}
       <header className="ctrip-detail-header ctrip-detail-header-overlay">
         <Button type="text" icon={<LeftOutlined />} onClick={() => navigate(-1)} className="ctrip-back-btn" />
         <div className="ctrip-detail-header-actions">
@@ -125,7 +152,9 @@ const HotelDetail: React.FC = () => {
           <Rate disabled value={hotel.starRating} className="ctrip-detail-rate" />
         </div>
         <div className="ctrip-detail-badges">
-          <span className="ctrip-detail-badge-link">上海美景酒店榜 No.16 ›</span>
+          <span className="ctrip-detail-badge-link">
+            {hotel.address?.match(/^(.+?[市省])/)?.[1] || '精选'}美景酒店榜 No.{(hotel.id % 20) + 1} ›
+          </span>
         </div>
 
         <div className="ctrip-detail-features-row">
