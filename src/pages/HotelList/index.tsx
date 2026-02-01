@@ -31,6 +31,16 @@ const getRatingLabel = (score: number) => {
   return '好评';
 };
 
+// Parse price range string to minPrice/maxPrice
+const parsePriceRange = (range: string): { minPrice?: number; maxPrice?: number } => {
+  if (!range || range === '不限') return {};
+  if (range === '¥150以下') return { maxPrice: 150 };
+  if (range === '¥600以上') return { minPrice: 600 };
+  const match = range.match(/¥(\d+)-(\d+)/);
+  if (match) return { minPrice: Number(match[1]), maxPrice: Number(match[2]) };
+  return {};
+};
+
 const HotelList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -42,6 +52,7 @@ const HotelList: React.FC = () => {
   const [keyword] = useState(searchParams.get('keyword') || '');
   const [city] = useState(searchParams.get('city') || '上海');
   const [starRating] = useState(Number(searchParams.get('starRating')) || 0);
+  const [priceRange] = useState(searchParams.get('priceRange') || '');
   const [sortBy, setSortBy] = useState('popular');
   const checkInParam = searchParams.get('checkIn');
   const checkOutParam = searchParams.get('checkOut');
@@ -50,6 +61,9 @@ const HotelList: React.FC = () => {
 
   const hasMore = list.length < total;
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Parse price range once
+  const { minPrice, maxPrice } = parsePriceRange(priceRange);
 
   const loadPage = useCallback(
     async (pageNum: number, append: boolean) => {
@@ -60,6 +74,8 @@ const HotelList: React.FC = () => {
         if (keyword.trim()) params.keyword = keyword.trim();
         if (city.trim()) params.city = city.trim();
         if (starRating > 0) params.starRating = starRating;
+        if (minPrice !== undefined) params.minPrice = minPrice;
+        if (maxPrice !== undefined) params.maxPrice = maxPrice;
         const res = await publicHotelApi.getList(params);
         if (append) {
           setList((prev) => [...prev, ...(res.data || [])]);
@@ -76,7 +92,7 @@ const HotelList: React.FC = () => {
         setLoadingMore(false);
       }
     },
-    [keyword, city, starRating],
+    [keyword, city, starRating, minPrice, maxPrice],
   );
 
   useEffect(() => {
