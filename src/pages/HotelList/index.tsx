@@ -138,6 +138,7 @@ const HotelList: React.FC = () => {
           <div className="search-box-row">
             <span className="search-city">{city}</span>
             <span className="search-dates">{checkIn.format('MM-DD')} 住 {checkOut.format('MM-DD')} 离</span>
+            <span className="search-nights">共{Math.max(1, checkOut.diff(checkIn, 'day'))}晚</span>
           </div>
           <div className="search-box-input">
             {keyword || '位置/品牌/酒店'}

@@ -65,6 +65,15 @@
   color: #666;
 }
 
+.search-nights {
+  color: var(--ctrip-blue);
+  font-weight: 600;
+  background: #e6f4ff;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
 .search-box-input {
   font-size: 13px;
   color: #999;
