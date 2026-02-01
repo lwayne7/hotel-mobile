@@ -1,180 +1,153 @@
+:root {
+  --ctrip-blue: #0086f6;
+  --ctrip-blue-dark: #006ed3;
+  --ctrip-orange: #ff9500;
+  --ctrip-text-main: #333333;
+  --ctrip-text-sub: #666666;
+  --ctrip-bg-page: #f5f7fa;
+}
+
 .ctrip-list {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
-  background: var(--ctrip-bg);
+  background: var(--ctrip-bg-page);
   display: flex;
   flex-direction: column;
   overflow: auto;
   padding-bottom: 24px;
 }
 
-.ctrip-list-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+/* Consolidated Header */
+.ctrip-list-header-complex {
+  background: #fff;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  background: var(--ctrip-card);
-  border-bottom: 1px solid #f0f0f0;
-  color: var(--ctrip-text);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .ctrip-back-btn {
-  color: var(--ctrip-text) !important;
+  font-size: 20px;
+  color: #333;
   margin-right: 8px;
-  font-size: 18px;
   padding: 4px;
 }
 
-.ctrip-list-header-center {
+.ctrip-list-search-box {
   flex: 1;
-  min-width: 0;
+  background: #f5f7fa;
+  border-radius: 18px;
+  padding: 6px 12px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  border: 1px solid #e8e8e8;
+}
+
+.search-box-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  align-items: baseline;
+}
+
+.search-city {
+  color: #333;
+  font-weight: 600;
+}
+
+.search-dates {
+  color: #666;
+}
+
+.search-box-input {
+  font-size: 13px;
+  color: #999;
+  margin-top: 1px;
+}
+
+.ctrip-list-map-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 10px;
+  color: #333;
+  font-size: 16px;
   gap: 2px;
 }
 
-.ctrip-list-city {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ctrip-text);
+.map-text {
+  font-size: 10px;
 }
 
-.ctrip-list-dates {
-  font-size: 12px;
-  color: var(--ctrip-text-secondary);
-}
-
-.ctrip-list-header-right {
-  flex-shrink: 0;
-}
-
-.ctrip-list-map {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--ctrip-primary);
-  cursor: pointer;
-}
-
-.ctrip-list-search-row {
-  padding: 10px 16px;
-  background: var(--ctrip-card);
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.ctrip-list-search-input {
-  border-radius: 8px;
-  background: var(--ctrip-bg);
-}
-
-.ctrip-list-search-input.ant-input-affix-wrapper {
-  padding-inline: 12px;
-}
-
-.ctrip-list-search-icon {
-  color: var(--ctrip-text-placeholder);
-  margin-right: 6px;
-}
-
+/* Filters */
 .ctrip-list-filters {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 10px 16px;
-  background: var(--ctrip-card);
-  border-bottom: 1px solid #f0f0f0;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #fff;
   overflow-x: auto;
 }
 
 .ctrip-list-filter-item {
   flex-shrink: 0;
-  font-size: 13px;
-  color: var(--ctrip-text-secondary);
+  font-size: 12px;
+  color: #666;
   padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
 }
 
 .ctrip-list-filter-item.active {
-  color: var(--ctrip-primary);
-  background: #fff5eb;
-  font-weight: 500;
+  color: var(--ctrip-blue);
+  font-weight: 600;
 }
 
 .ctrip-list-quick-tags {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  padding: 10px 16px;
-  background: var(--ctrip-card);
-  border-bottom: 1px solid #f0f0f0;
+  padding: 0 12px 10px;
+  background: #fff;
+  overflow-x: auto;
 }
 
 .ctrip-list-quick-tag {
-  font-size: 12px;
-  color: var(--ctrip-text-secondary);
-  padding: 4px 12px;
-  background: var(--ctrip-bg);
-  border-radius: 16px;
-  cursor: pointer;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #666;
 }
 
-.ctrip-list-quick-tag:hover {
-  color: var(--ctrip-primary);
-  background: #fff5eb;
-}
-
-.ctrip-list-result-hint {
-  padding: 8px 16px;
-  font-size: 13px;
-  color: var(--ctrip-text-secondary);
-}
-
-.ctrip-list-result-hint strong {
-  color: var(--ctrip-primary);
-}
-
+/* Content */
 .ctrip-list-content {
   flex: 1;
-  padding: 12px 16px;
+  padding: 10px 12px;
 }
 
-.ctrip-list-loading {
-  display: flex;
-  justify-content: center;
-  padding: 48px 0;
-}
-
-.ctrip-empty {
-  padding: 48px 0;
-}
-
-/* 卡片：左侧大图 + 右侧信息（携程列表样式） */
+/* Hotel Card */
 .ctrip-list-card {
   display: flex;
-  background: var(--ctrip-card);
-  border-radius: 12px;
+  background: #fff;
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
-
-.ctrip-list-card:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+  padding: 10px;
 }
 
 .ctrip-list-card-cover {
-  width: 130px;
-  min-width: 130px;
-  height: 160px;
-  background: #e8e8e8;
+  width: 110px;
+  height: 150px;
+  border-radius: 6px;
+  overflow: hidden;
   position: relative;
+  margin-right: 10px;
+  flex-shrink: 0;
 }
 
 .ctrip-list-card-cover img {
@@ -186,168 +159,174 @@
 .ctrip-list-card-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #fff0e6, #ffd9bf);
+  background: #eee;
 }
 
-.ctrip-list-card-play {
+.ctrip-video-icon {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 28px;
-  height: 28px;
-  background: rgba(0, 0, 0, 0.5);
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 50%;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/16px no-repeat;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/16px no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-triangle {
+  color: #fff;
+  font-size: 8px;
+  margin-left: 1px;
 }
 
 .ctrip-list-card-body {
   flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.ctrip-list-card-name-row {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
 }
 
 .ctrip-list-card-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--ctrip-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #333;
   line-height: 1.3;
+  margin-bottom: 4px;
+  max-width: 85%;
 }
 
-.ctrip-list-card-meta {
+.ctrip-card-star {
+  font-size: 8px;
+}
+
+.ctrip-list-card-score-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
-.ctrip-list-card-rate {
-  font-size: 11px !important;
-}
-
-.ctrip-list-card-rate .ant-rate-star {
-  margin-inline-end: 2px;
-}
-
-.ctrip-list-card-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  padding: 2px 8px;
-  background: linear-gradient(135deg, #1a7cff 0%, #4d9eff 100%);
+.ctrip-score-box {
+  background: linear-gradient(90deg, #3d8cf9 0%, #0066f5 100%);
+  border-radius: 4px 10px 4px 10px;
+  /* Specific corner radius */
+  padding: 2px 6px;
   color: #fff;
-  border-radius: 4px;
-  width: fit-content;
-  font-size: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
 }
 
-.ctrip-list-card-score-num {
+.score-num {
   font-weight: 700;
   font-size: 13px;
 }
 
-.ctrip-list-card-score-label {
-  margin-right: 4px;
+.score-label {
+  font-size: 10px;
 }
 
-.ctrip-list-card-score-reviews {
-  opacity: 0.95;
+.ctrip-score-text {
   font-size: 11px;
+  color: var(--ctrip-blue);
+  font-weight: 500;
 }
 
 .ctrip-list-card-nearby {
-  font-size: 12px;
-  color: var(--ctrip-text-secondary);
-  margin-top: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ctrip-list-card-highlight {
-  font-size: 12px;
-  color: var(--ctrip-text-secondary);
-  margin-top: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 11px;
+  color: #333;
+  margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .ctrip-list-card-tags {
   display: flex;
+  gap: 4px;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.ctrip-tag-boss {
+  background: #333;
+  color: #ffd700;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 700;
 }
 
 .ctrip-list-tag {
-  padding: 2px 8px;
-  background: #f5f5f5;
-  color: var(--ctrip-text-secondary);
-  font-size: 11px;
-  border-radius: 4px;
+  color: #666;
+  font-size: 10px;
+  border: 1px solid #f0f0f0;
+  padding: 0 4px;
+  border-radius: 2px;
 }
 
 .ctrip-list-card-price-row {
-  margin-top: auto;
-  padding-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.ctrip-price-block {
   text-align: right;
 }
 
-.ctrip-list-card-price-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+.price-top {
+  color: var(--ctrip-blue);
+  line-height: 1;
 }
 
-.ctrip-list-card-price-wrap .ctrip-price-num {
-  color: var(--ctrip-price);
+.currency {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.price-val {
   font-size: 20px;
   font-weight: 700;
 }
 
-.ctrip-list-card-price-wrap .ctrip-price-suffix {
-  font-size: 12px;
-  color: var(--ctrip-text-placeholder);
+.price-up {
+  font-size: 11px;
+  color: #999;
   margin-left: 2px;
 }
 
-.ctrip-list-card-original {
-  font-size: 11px;
-  color: var(--ctrip-text-placeholder);
-  text-decoration: line-through;
-  margin-left: 4px;
-}
-
-.ctrip-list-card-offers {
-  font-size: 11px;
-  color: var(--ctrip-primary);
+.price-bottom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
   margin-top: 2px;
 }
 
-.ctrip-price-num {
-  color: var(--ctrip-price);
-  font-weight: 700;
+.price-diamond {
+  font-size: 10px;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 0 2px;
+  border-radius: 2px;
 }
 
-.ctrip-price-suffix {
-  font-size: 12px;
-  color: var(--ctrip-text-placeholder);
-  margin-left: 2px;
+.price-del {
+  font-size: 11px;
+  color: #999;
+  text-decoration: line-through;
 }
 
-.ctrip-list-more,
-.ctrip-list-more-hint {
+.ctrip-list-loading,
+.ctrip-empty {
   text-align: center;
-  padding: 16px;
-  color: var(--ctrip-text-placeholder);
-  font-size: 13px;
+  padding: 30px;
 }

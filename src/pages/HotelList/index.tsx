@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Input, Button, Rate, Spin, Empty } from 'antd';
-import { SearchOutlined, LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { Button, Spin, Empty } from 'antd';
+import { LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
 import type { Hotel } from '../../services/api';
@@ -39,15 +39,15 @@ const HotelList: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
-  const [city, setCity] = useState(searchParams.get('city') || '上海');
-  const [starRating, setStarRating] = useState(Number(searchParams.get('starRating')) || 0);
+  const [keyword] = useState(searchParams.get('keyword') || '');
+  const [city] = useState(searchParams.get('city') || '上海');
+  const [starRating] = useState(Number(searchParams.get('starRating')) || 0);
   const [sortBy, setSortBy] = useState('popular');
   const checkInParam = searchParams.get('checkIn');
   const checkOutParam = searchParams.get('checkOut');
   const checkIn = checkInParam ? dayjs(checkInParam) : dayjs();
   const checkOut = checkOutParam ? dayjs(checkOutParam) : dayjs().add(1, 'day');
-  const nights = Math.max(1, checkOut.diff(checkIn, 'day'));
+
   const hasMore = list.length < total;
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -82,16 +82,6 @@ const HotelList: React.FC = () => {
   useEffect(() => {
     loadPage(1, false);
   }, [loadPage]);
-
-  const handleSearch = () => {
-    const params = new URLSearchParams(searchParams);
-    if (keyword.trim()) params.set('keyword', keyword.trim());
-    else params.delete('keyword');
-    if (city.trim()) params.set('city', city.trim());
-    if (starRating > 0) params.set('starRating', String(starRating));
-    navigate(`/hotels?${params.toString()}`);
-    loadPage(1, false);
-  };
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
@@ -141,32 +131,23 @@ const HotelList: React.FC = () => {
 
   return (
     <div className="ctrip-list" ref={containerRef}>
-      <header className="ctrip-list-header">
+      {/* Consolidated Header */}
+      <header className="ctrip-list-header-complex">
         <Button type="text" icon={<LeftOutlined />} onClick={() => navigate('/')} className="ctrip-back-btn" />
-        <div className="ctrip-list-header-center">
-          <span className="ctrip-list-city">{city || '上海'}</span>
-          <span className="ctrip-list-dates">
-            住 {checkIn.format('MM-DD')} 离 {checkOut.format('MM-DD')} {nights}晚
-          </span>
+        <div className="ctrip-list-search-box">
+          <div className="search-box-row">
+            <span className="search-city">{city}</span>
+            <span className="search-dates">{checkIn.format('MM-DD')} 住 {checkOut.format('MM-DD')} 离</span>
+          </div>
+          <div className="search-box-input">
+            {keyword || '位置/品牌/酒店'}
+          </div>
         </div>
-        <div className="ctrip-list-header-right">
-          <span className="ctrip-list-map" onClick={goToMap}>
-            <EnvironmentOutlined /> 地图
-          </span>
+        <div className="ctrip-list-map-icon" onClick={goToMap}>
+          <EnvironmentOutlined />
+          <span className="map-text">地图</span>
         </div>
       </header>
-
-      <div className="ctrip-list-search-row">
-        <Input
-          prefix={<SearchOutlined className="ctrip-list-search-icon" />}
-          placeholder="位置/品牌/酒店"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          onPressEnter={handleSearch}
-          allowClear
-          className="ctrip-list-search-input"
-        />
-      </div>
 
       <div className="ctrip-list-filters">
         {SORT_OPTIONS.map((opt) => (
@@ -215,37 +196,48 @@ const HotelList: React.FC = () => {
                     ) : (
                       <div className="ctrip-list-card-placeholder" />
                     )}
-                    <span className="ctrip-list-card-play" />
+                    <div className="ctrip-video-icon">
+                      <span className="video-triangle">▶</span>
+                    </div>
                   </div>
                   <div className="ctrip-list-card-body">
-                    <div className="ctrip-list-card-name">{hotel.nameCn}</div>
-                    <div className="ctrip-list-card-meta">
-                      <Rate disabled value={hotel.starRating} className="ctrip-list-card-rate" />
+                    <div className="ctrip-list-card-name-row">
+                      <span className="ctrip-list-card-name">{hotel.nameCn}</span>
+                      {hotel.starRating >= 5 && <span className="ctrip-card-star">💎💎💎💎💎</span>}
                     </div>
-                    <div className="ctrip-list-card-score">
-                      <span className="ctrip-list-card-score-num">{score}</span>
-                      <span className="ctrip-list-card-score-label">{getRatingLabel(score)}</span>
-                      <span className="ctrip-list-card-score-reviews">{reviews}点评·{favorites}收藏</span>
-                    </div>
-                    <div className="ctrip-list-card-nearby">近{nearbyText}</div>
-                    {hotel.description && (
-                      <div className="ctrip-list-card-highlight">{hotel.description.slice(0, 36)}{hotel.description.length > 36 ? '…' : ''}</div>
-                    )}
-                    {tags.length > 0 && (
-                      <div className="ctrip-list-card-tags">
-                        {tags.map((t) => (
-                          <span key={t} className="ctrip-list-tag">{t}</span>
-                        ))}
+
+                    <div className="ctrip-list-card-score-row">
+                      <div className="ctrip-score-box">
+                        <span className="score-num">{score}</span>
+                        <span className="score-label">{getRatingLabel(score)}</span>
                       </div>
-                    )}
+                      <span className="ctrip-score-text">{reviews}点评 · {favorites}收藏 · "{getRatingLabel(score)}推荐"</span>
+                    </div>
+
+                    <div className="ctrip-list-card-nearby">
+                      {nearbyText}
+                    </div>
+
+                    <div className="ctrip-list-card-tags">
+                      <span className="ctrip-tag-boss">BOSS推荐</span>
+                      {tags.slice(0, 2).map((t) => (
+                        <span key={t} className="ctrip-list-tag">{t}</span>
+                      ))}
+                    </div>
+
                     <div className="ctrip-list-card-price-row">
-                      <div className="ctrip-list-card-price-wrap">
-                        <span className="ctrip-price-num">¥{minPrice}</span>
-                        <span className="ctrip-price-suffix">起</span>
+                      <div className="ctrip-price-block">
+                        <div className="price-top">
+                          <span className="currency">¥</span>
+                          <span className="price-val">{minPrice}</span>
+                          <span className="price-up">起</span>
+                        </div>
                         {originalPrice > minPrice && (
-                          <span className="ctrip-list-card-original">¥{originalPrice}</span>
+                          <div className="price-bottom">
+                            <span className="price-diamond">钻石贵宾价</span>
+                            <span className="price-del">¥{originalPrice}</span>
+                          </div>
                         )}
-                        <div className="ctrip-list-card-offers">钻石贵宾价 · 满减券</div>
                       </div>
                     </div>
                   </div>
