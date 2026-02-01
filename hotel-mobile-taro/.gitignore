@@ -1,7 +1,0 @@
-node_modules
-dist
-.taro
-.DS_Store
-*.log
-.env.local
-.env.*.local
