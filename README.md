@@ -1,17 +1,10 @@
-# 易宿酒店 - 用户端（移动端）
+# 易宿酒店 - 用户端（移动端）Vite H5 版
 
 用户端预定流程：酒店查询页、酒店列表页、酒店详情页。独立于管理端（hotel-management），与后端公开 API 对接。
 
-本仓库包含两个实现：
+**Taro 多端版（H5 / 微信小程序 / RN）** 已迁至独立仓库：[lwayne7/hotel-mobile-taro](https://github.com/lwayne7/hotel-mobile-taro)。
 
-| 目录 | 说明 |
-|------|------|
-| **根目录** | Vite H5 版（React 19 + Vite 7） |
-| **hotel-mobile-taro/** | Taro 多端版（H5 + 微信小程序，一套代码多端编译） |
-
-## 根目录 - Vite H5 版
-
-### 技术栈
+## 技术栈
 
 - React 19 + TypeScript
 - Vite 7
@@ -39,7 +32,7 @@ npm run seed            # 可选：初始化种子数据
 npm run start:dev       # 后端运行在 http://localhost:3000
 ```
 
-### 2. 安装并启动用户端（根目录 Vite 版）
+### 2. 安装并启动用户端
 
 ```bash
 npm install
@@ -63,17 +56,6 @@ npm run build
 ```
 
 产物在 `dist/`，可部署到任意静态托管。
-
-## Taro 多端版（hotel-mobile-taro/）
-
-一套 React 代码编译到 H5 与微信小程序，含入住日期日历组件、列表上滑加载、详情大图轮播与房型价格列表。详见 [hotel-mobile-taro/README.md](hotel-mobile-taro/README.md)。
-
-```bash
-cd hotel-mobile-taro
-npm install
-npm run dev:h5      # H5 开发，端口 10086
-npm run dev:weapp   # 微信小程序开发，用开发者工具打开 dist
-```
 
 ## 与后端关系
 
