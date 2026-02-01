@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Button, Spin, Empty } from 'antd';
+import { Button, Spin, Empty, message } from 'antd';
 import { LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
@@ -47,6 +47,7 @@ const HotelList: React.FC = () => {
   const [list, setList] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [keyword] = useState(searchParams.get('keyword') || '');
@@ -69,6 +70,7 @@ const HotelList: React.FC = () => {
     async (pageNum: number, append: boolean) => {
       if (pageNum === 1) setLoading(true);
       else setLoadingMore(true);
+      setLoadError(null);
       try {
         const params: any = { page: pageNum, pageSize: PAGE_SIZE };
         if (keyword.trim()) params.keyword = keyword.trim();
@@ -85,8 +87,14 @@ const HotelList: React.FC = () => {
         setTotal(res.total || 0);
         setPage(pageNum);
       } catch (e) {
-        if (append) setList((prev) => prev);
-        else setList([]);
+        const msg = (e as any)?.message || '加载失败，请检查网络或稍后重试';
+        if (append) {
+          message.error(msg);
+          setList((prev) => prev);
+        } else {
+          setList([]);
+          setLoadError(msg);
+        }
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -189,6 +197,14 @@ const HotelList: React.FC = () => {
         {loading ? (
           <div className="ctrip-list-loading">
             <Spin size="large" />
+          </div>
+        ) : loadError ? (
+          <div className="ctrip-empty">
+            <div className="ctrip-empty-msg">{loadError}</div>
+            <div className="ctrip-empty-hint">请确认已启动后端：cd hotel-management/backend && npm run start:dev</div>
+            <Button type="primary" onClick={() => loadPage(1, false)} style={{ marginTop: 12 }}>
+              重试
+            </Button>
           </div>
         ) : list.length === 0 ? (
           <Empty description="暂无酒店" className="ctrip-empty" />

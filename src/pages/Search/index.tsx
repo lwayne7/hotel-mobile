@@ -117,7 +117,7 @@ const Search: React.FC = () => {
   const handleCheckInChange = (date: dayjs.Dayjs | null) => {
     setCheckIn(date);
     // 自动调整离店日期
-    if (date && checkOut && date.isAfter(checkOut)) {
+    if (date && (!checkOut || !checkOut.isAfter(date, 'day'))) {
       setCheckOut(date.add(1, 'day'));
     }
     setShowDatePicker(null);
@@ -316,7 +316,11 @@ const Search: React.FC = () => {
       <Modal
         title="筛选条件"
         open={showFilterModal}
-        onCancel={() => setShowFilterModal(false)}
+        onCancel={() => {
+          setStarRating(0);
+          setPriceRange('不限');
+          setShowFilterModal(false);
+        }}
         onOk={() => setShowFilterModal(false)}
         okText="确定"
         cancelText="重置"
@@ -377,4 +381,3 @@ const Search: React.FC = () => {
 };
 
 export default Search;
-

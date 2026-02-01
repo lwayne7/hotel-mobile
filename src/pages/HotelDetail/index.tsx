@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Button, Rate, Spin, Carousel } from 'antd';
 import {
   LeftOutlined,
@@ -21,8 +21,10 @@ const HotelDetail: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [collected, setCollected] = useState(false);
   const [showNavHeader, setShowNavHeader] = useState(false);
+  const roomsRef = useRef<HTMLDivElement | null>(null);
   const [checkIn] = useState<dayjs.Dayjs | null>(
     searchParams.get('checkIn') ? dayjs(searchParams.get('checkIn')) : dayjs(),
   );
@@ -49,12 +51,21 @@ const HotelDetail: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
+    setLoadError(null);
     publicHotelApi
       .getById(parseInt(id, 10))
       .then(setHotel)
-      .catch(() => setHotel(null))
+      .catch((e) => {
+        setHotel(null);
+        setLoadError((e as any)?.message || '加载失败，请稍后重试');
+      })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const scrollToRooms = () => {
+    roomsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   if (loading) {
     return (
@@ -71,7 +82,7 @@ const HotelDetail: React.FC = () => {
           返回列表
         </Button>
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--ctrip-text-secondary)' }}>
-          酒店不存在或未发布
+          {loadError || '酒店不存在或未发布'}
         </div>
       </div>
     );
@@ -221,7 +232,7 @@ const HotelDetail: React.FC = () => {
         ))}
       </div>
 
-      <div className="ctrip-detail-rooms">
+      <div id="detail-rooms" className="ctrip-detail-rooms" ref={roomsRef}>
         {roomTypes.length === 0 ? (
           <div className="ctrip-detail-no-room">暂无房型</div>
         ) : (
@@ -248,7 +259,7 @@ const HotelDetail: React.FC = () => {
                       <span className="amount">{room.price}</span>
                       <span className="suffix">起</span>
                     </div>
-                    <Button type="primary" className="view-room-btn">查看房型</Button>
+                    <Button type="primary" className="view-room-btn" onClick={scrollToRooms}>查看房型</Button>
                   </div>
                 </div>
               </div>
@@ -268,7 +279,7 @@ const HotelDetail: React.FC = () => {
           <span className="ctrip-detail-bottom-label">¥{minPrice}</span>
           <span className="ctrip-detail-bottom-suffix">起</span>
         </div>
-        <Button type="primary" size="large" className="ctrip-detail-bottom-btn">
+        <Button type="primary" size="large" className="ctrip-detail-bottom-btn" onClick={scrollToRooms}>
           查看房型
         </Button>
       </div>
