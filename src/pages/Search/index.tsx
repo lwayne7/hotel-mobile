@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Select, Typography, message } from 'antd';
-import { SearchOutlined, EnvironmentOutlined, DownOutlined } from '@ant-design/icons';
+import { Input, Button, Typography, message } from 'antd';
+import { EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
 import dayjs from 'dayjs';
@@ -15,12 +15,7 @@ const TABS = [
   { key: 'homestay', label: '民宿' },
 ];
 
-const STAR_OPTIONS = [
-  { value: 0, label: '价格/星级' },
-  { value: 5, label: '五星' },
-  { value: 4, label: '四星' },
-  { value: 3, label: '三星' },
-];
+
 
 const POPULAR_CITIES = [
   '北京', '上海', '广州', '深圳', '杭州', '成都', '西安', '三亚',
@@ -34,12 +29,10 @@ const Search: React.FC = () => {
   const [activeTab, setActiveTab] = useState('domestic');
   const [keyword, setKeyword] = useState('');
   const [city, setCity] = useState('上海');
-  const [checkIn, setCheckIn] = useState<dayjs.Dayjs | null>(dayjs());
-  const [checkOut, setCheckOut] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'));
-  const [starRating, setStarRating] = useState<number>(0);
+  const [checkIn, _setCheckIn] = useState<dayjs.Dayjs | null>(dayjs());
+  const [checkOut, _setCheckOut] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'));
+  const [starRating, _setStarRating] = useState<number>(0);
   const [bannerHotels, setBannerHotels] = useState<any[]>([]);
-
-  const nights = checkIn && checkOut ? Math.max(0, checkOut.diff(checkIn, 'day')) : 1;
 
   useEffect(() => {
     publicHotelApi
@@ -63,106 +56,108 @@ const Search: React.FC = () => {
     navigate(`/hotels?city=${encodeURIComponent(c)}`);
   };
 
-  const minDate = dayjs().startOf('day');
+
 
   return (
     <div className="ctrip-search">
       <header className="ctrip-search-header">
-        <div className="ctrip-search-brand">
-          <span className="ctrip-search-logo">易宿</span>
-          <span className="ctrip-search-slogan">酒店·民宿</span>
-        </div>
+        <div className="ctrip-search-page-title">酒店查询页</div>
       </header>
 
-      {/* 顶部标题 */}
-      <div className="ctrip-search-page-title">酒店查询页</div>
-
       {/* 促销 Banner */}
-      <div className="ctrip-search-banner">
-        <div className="ctrip-search-banner-bg" />
-        <div className="ctrip-search-banner-content">
-          <span className="ctrip-search-banner-text">酒店7折起</span>
+      <div className="ctrip-search-banner-wrap">
+        <div className="ctrip-search-banner-inner">
+          <div className="ctrip-search-banner-text">
+            <span className="text-big">酒店7折起</span>
+            <span className="text-sub">大促</span>
+          </div>
           <div className="ctrip-search-banner-tags">
-            <span className="ctrip-search-banner-tag">资质说明</span>
-            <span className="ctrip-search-banner-tag">精选推荐</span>
+            <span className="tag-trans">官方补贴</span>
+            <span className="tag-trans">资质说明</span>
           </div>
         </div>
       </div>
 
-      {/* Tab：国内/海外/钟点房/民宿 */}
-      <div className="ctrip-search-tabs">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={`ctrip-search-tab ${activeTab === tab.key ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 搜索表单 */}
-      <div className="ctrip-search-main">
-        <div className="ctrip-search-row-first">
-          <div className="ctrip-search-city" onClick={() => message.info('可弹窗选择城市')}>
-            <span>{city || '选择城市'}</span>
-            <DownOutlined className="ctrip-search-arrow" />
-          </div>
-          <Input
-            placeholder="位置/品牌/酒店"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            allowClear
-            className="ctrip-search-input-inline"
-          />
-          <div className="ctrip-search-gps" onClick={() => message.info('定位')}>
-            <EnvironmentOutlined />
-          </div>
-        </div>
-
-        <div className="ctrip-search-row-dates">
-          <span className="ctrip-search-date-label">住</span>
-          <span className="ctrip-search-date-value">
-            {checkIn ? checkIn.format('MM月DD日') : '入住'}
-          </span>
-          <span className="ctrip-search-date-tag">{checkIn?.isSame(dayjs(), 'day') ? '今天' : ''}</span>
-          <span className="ctrip-search-date-dash">-</span>
-          <span className="ctrip-search-date-label">离</span>
-          <span className="ctrip-search-date-value">
-            {checkOut ? checkOut.format('MM月DD日') : '离店'}
-          </span>
-          <span className="ctrip-search-date-tag">{checkOut?.isSame(dayjs().add(1, 'day'), 'day') ? '明天' : ''}</span>
-          <span className="ctrip-search-date-nights">共{nights}晚</span>
-        </div>
-
-        <div className="ctrip-search-tip">
-          <span className="ctrip-search-tip-icon">🌙</span>
-          当前已过0点，如需今天凌晨6点前入住，请选择「今天凌晨」
-        </div>
-
-        <div className="ctrip-search-row-price">
-          <Select
-            value={starRating}
-            onChange={setStarRating}
-            options={STAR_OPTIONS}
-            className="ctrip-search-price-select"
-            suffixIcon={<DownOutlined />}
-          />
-        </div>
-
-        <div className="ctrip-search-quick-tags">
-          {QUICK_TAGS.map((t) => (
-            <span key={t} className="ctrip-search-quick-tag" onClick={() => message.info(`筛选：${t}`)}>
-              {t}
-            </span>
+      {/* 搜索卡片容器 */}
+      <div className="ctrip-search-card">
+        {/* Tab：国内/海外/钟点房/民宿 */}
+        <div className="ctrip-search-tabs">
+          {TABS.map((tab) => (
+            <div
+              key={tab.key}
+              className={`ctrip-search-tab ${activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+              {activeTab === tab.key && <div className="active-indicator" />}
+            </div>
           ))}
         </div>
 
-        <Button type="primary" block size="large" className="ctrip-search-btn" onClick={handleSearch}>
-          查询
-        </Button>
+        {/* 搜索表单 */}
+        <div className="ctrip-search-form">
+          <div className="ctrip-search-row city-row">
+            <div className="ctrip-search-city" onClick={() => message.info('可弹窗选择城市')}>
+              <span className="city-text">{city || '选择城市'}</span>
+            </div>
+            <div className="ctrip-search-input-wrap">
+              <Input
+                placeholder="位置/品牌/酒店"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                allowClear
+                className="ctrip-search-input-clean"
+                variant="borderless"
+              />
+            </div>
+            <div className="ctrip-search-gps" onClick={() => message.info('定位')}>
+              <span className="gps-text">我的位置</span>
+              <EnvironmentOutlined />
+            </div>
+          </div>
+
+          <div className="ctrip-search-divider" />
+
+          <div className="ctrip-search-row date-row">
+            <div className="date-col">
+              <span className="date-label">入住</span>
+              <div className="date-val-row">
+                <span className="date-val">{checkIn ? checkIn.format('MM月DD日') : '入住'}</span>
+                <span className="date-sub">{checkIn?.isSame(dayjs(), 'day') ? '今天' : ''}</span>
+              </div>
+            </div>
+            <div className="date-nights">
+              1晚
+            </div>
+            <div className="date-col">
+              <span className="date-label">离店</span>
+              <div className="date-val-row">
+                <span className="date-val">{checkOut ? checkOut.format('MM月DD日') : '离店'}</span>
+                <span className="date-sub">{checkOut?.isSame(dayjs().add(1, 'day'), 'day') ? '明天' : ''}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ctrip-search-divider" />
+
+          <div className="ctrip-search-row price-row">
+            <div className="price-input" onClick={() => message.info('价格星级')}>
+              <span className="price-val">价格/星级</span>
+              <span className="price-sub">低价/高档</span>
+            </div>
+            <div className="quick-tags-clean">
+              {QUICK_TAGS.slice(0, 2).map((t) => (
+                <span key={t} className="quick-tag-item">{t}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="ctrip-search-btn-wrap">
+            <Button type="primary" block className="ctrip-btn-search-submit" onClick={handleSearch}>
+              查询
+            </Button>
+          </div>
+        </div>
       </div>
 
       <section className="ctrip-section">
