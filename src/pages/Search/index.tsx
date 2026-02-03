@@ -165,23 +165,46 @@ const Search: React.FC = () => {
         <div className="ctrip-search-page-title">酒店查询页</div>
       </header>
 
-      {/* 促销 Banner - 点击跳转第一个酒店 */}
-      <div
-        className="ctrip-search-banner-wrap"
-        onClick={() => bannerHotels[0] && navigate(`/hotels/${bannerHotels[0].id}`)}
-        style={{ cursor: bannerHotels[0] ? 'pointer' : 'default' }}
-      >
-        <div className="ctrip-search-banner-inner">
-          <div className="ctrip-search-banner-text">
-            <span className="text-big">酒店7折起</span>
-            <span className="text-sub">大促</span>
-          </div>
-          <div className="ctrip-search-banner-tags">
-            <span className="tag-trans">官方补贴</span>
-            <span className="tag-trans">资质说明</span>
+      {/* 酒店广告 Banner */}
+      {bannerHotels[0] && (
+        <div
+          className="ctrip-search-banner-wrap"
+          onClick={() => navigate(`/hotels/${bannerHotels[0].id}`)}
+        >
+          <div className="ctrip-search-banner-hotel">
+            {/* 左侧酒店图片 */}
+            <div className="banner-hotel-image">
+              {bannerHotels[0].images?.[0]?.imageUrl ? (
+                <img src={bannerHotels[0].images[0].imageUrl} alt={bannerHotels[0].nameCn} />
+              ) : (
+                <div className="banner-hotel-placeholder" />
+              )}
+              <div className="banner-hotel-badge">推荐</div>
+            </div>
+            
+            {/* 右侧酒店信息 */}
+            <div className="banner-hotel-info">
+              <div className="banner-hotel-name">{bannerHotels[0].nameCn}</div>
+              <div className="banner-hotel-rating">
+                {bannerHotels[0].starRating >= 5 && <span className="rating-stars">💎💎💎💎💎</span>}
+                {bannerHotels[0].starRating === 4 && <span className="rating-stars">⭐⭐⭐⭐</span>}
+                {bannerHotels[0].starRating === 3 && <span className="rating-stars">⭐⭐⭐</span>}
+              </div>
+              <div className="banner-hotel-address">
+                📍 {bannerHotels[0].address?.slice(0, 20)}
+                {bannerHotels[0].address && bannerHotels[0].address.length > 20 ? '...' : ''}
+              </div>
+              <div className="banner-hotel-price">
+                <span className="price-label">特惠价</span>
+                <span className="price-value">
+                  ¥{bannerHotels[0].roomTypes?.[0]?.price || '--'}
+                </span>
+                <span className="price-unit">起</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 搜索卡片容器 */}
       <div className="ctrip-search-card">
