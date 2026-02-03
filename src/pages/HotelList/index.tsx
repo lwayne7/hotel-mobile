@@ -75,6 +75,7 @@ const HotelList: React.FC = () => {
 
   const hasMore = list.length < total;
   const containerRef = useRef<HTMLDivElement>(null);
+  const loadingPageRef = useRef<number | null>(null); // 跟踪正在加载的页码,防止重复加载
 
   // Parse price range once
   const { minPrice, maxPrice } = parsePriceRange(priceRange);
@@ -93,6 +94,14 @@ const HotelList: React.FC = () => {
 
   const loadPage = useCallback(
     async (pageNum: number, append: boolean) => {
+      // 防止重复加载同一页
+      if (loadingPageRef.current === pageNum) {
+        console.log(`页码 ${pageNum} 正在加载中,跳过重复请求`);
+        return;
+      }
+      
+      loadingPageRef.current = pageNum; // 标记正在加载
+      
       if (pageNum === 1) setLoading(true);
       else setLoadingMore(true);
       setLoadError(null);
@@ -116,7 +125,10 @@ const HotelList: React.FC = () => {
         }
         
         if (append) {
-          setList((prev) => [...prev, ...filteredData]);
+          setList((prev) => {
+            console.log(`追加数据: 原有${prev.length}条, 新增${filteredData.length}条`);
+            return [...prev, ...filteredData];
+          });
         } else {
           setList(filteredData);
           // 从酒店数据中提取常见设施作为快捷标签
@@ -136,6 +148,7 @@ const HotelList: React.FC = () => {
       } finally {
         setLoading(false);
         setLoadingMore(false);
+        loadingPageRef.current = null; // 清除加载标记
       }
     },
     [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter],
