@@ -2,11 +2,11 @@
 
 用户端预定流程：酒店查询页、酒店列表页、酒店详情页。独立于管理端（hotel-management），与后端公开 API 对接。
 
-**Taro 多端版（H5 / 微信小程序 / RN）** 已迁至独立仓库：[lwayne7/hotel-mobile-taro](https://github.com/lwayne7/hotel-mobile-taro)。
+**Taro 多端版（H5 / 微信小程序 / RN）** 已迁至独立项目：[hotel-mobile-taro](../hotel-mobile-taro)。
 
 ## 技术栈
 
-- React 19 + TypeScript
+- React 19 + TypeScript 5.9
 - Vite 7
 - Ant Design 6
 - React Router 7
