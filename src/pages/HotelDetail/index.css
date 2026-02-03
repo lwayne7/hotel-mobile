@@ -535,22 +535,35 @@
 /* Gallery Mute */
 .ctrip-detail-gallery-mute {
   position: absolute;
-  bottom: 16px;
+  bottom: 40px;
   right: 16px;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   color: #fff;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 10px;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
   z-index: 10;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+}
+
+.ctrip-detail-gallery-mute:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: scale(1.05);
+}
+
+.ctrip-detail-gallery-mute:active {
+  transform: scale(0.95);
 }
 
 .ctrip-detail-mute-x {
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 /* Review Quote */
