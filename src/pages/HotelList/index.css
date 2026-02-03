@@ -10,11 +10,12 @@
 .ctrip-list {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--ctrip-bg-page);
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 24px;
 }
 
@@ -109,6 +110,12 @@
   font-size: 12px;
   color: #666;
   padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrip-list-filter-item:hover {
+  color: var(--ctrip-blue);
 }
 
 .ctrip-list-filter-item.active {
@@ -118,19 +125,51 @@
 
 .ctrip-list-quick-tags {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 0 12px 10px;
+  padding: 8px 12px;
   background: #fff;
-  overflow-x: auto;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .ctrip-list-quick-tag {
-  flex-shrink: 0;
-  padding: 4px 10px;
+  padding: 5px 12px;
   background: #f5f7fa;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #666;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #333;
+  font-weight: 500;
+  border: 1px solid #e8e8e8;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrip-list-quick-tag:hover {
+  background: #e6f4ff;
+  border-color: var(--ctrip-blue);
+}
+
+.ctrip-list-quick-tag.active {
+  background: var(--ctrip-blue);
+  color: #fff;
+  border-color: var(--ctrip-blue);
+}
+
+/* 酒店数量显示 */
+.ctrip-list-count {
+  padding: 8px 12px;
+  background: #fff;
+  font-size: 13px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 500;
+}
+
+.count-num {
+  color: var(--ctrip-blue);
+  font-weight: 700;
+  font-size: 14px;
 }
 
 /* Content */
@@ -202,6 +241,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .ctrip-list-card-name {
@@ -209,12 +250,20 @@
   font-weight: 600;
   color: #333;
   line-height: 1.3;
-  margin-bottom: 4px;
-  max-width: 85%;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .ctrip-card-star {
-  font-size: 8px;
+  font-size: 9px;
+  line-height: 1;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .ctrip-list-card-score-row {
@@ -227,27 +276,32 @@
 .ctrip-score-box {
   background: linear-gradient(90deg, #3d8cf9 0%, #0066f5 100%);
   border-radius: 4px 10px 4px 10px;
-  /* Specific corner radius */
-  padding: 2px 6px;
+  padding: 3px 8px;
   color: #fff;
   display: flex;
-  align-items: baseline;
-  gap: 2px;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
 .score-num {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .score-label {
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1;
 }
 
 .ctrip-score-text {
   font-size: 11px;
   color: var(--ctrip-blue);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ctrip-list-card-nearby {
@@ -315,23 +369,26 @@
 .price-bottom {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   justify-content: flex-end;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .price-diamond {
   font-size: 10px;
-  color: #333;
-  border: 1px solid #ddd;
-  padding: 0 2px;
+  color: #ff6600;
+  background: #fff5e6;
+  padding: 1px 4px;
   border-radius: 2px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .price-del {
   font-size: 11px;
   color: #999;
   text-decoration: line-through;
+  white-space: nowrap;
 }
 
 .ctrip-list-loading,
@@ -346,6 +403,18 @@
 }
 
 .ctrip-empty-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.ctrip-list-more {
+  text-align: center;
+  padding: 16px;
+}
+
+.ctrip-list-more-hint {
+  text-align: center;
+  padding: 16px;
   font-size: 12px;
   color: #999;
 }

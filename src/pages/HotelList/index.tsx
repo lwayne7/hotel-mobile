@@ -14,7 +14,6 @@ const SORT_OPTIONS = [
   { key: 'price', label: '价格/星级' },
   { key: 'filter', label: '筛选' },
 ];
-const QUICK_TAGS = ['外滩', '双床房', '含早餐', '免费兑早餐', '可订'];
 
 // 模拟点评数、收藏数（无后端时用 id 生成）
 const getReviewStats = (hotel: Hotel) => {
@@ -50,10 +49,13 @@ const HotelList: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [quickTags, setQuickTags] = useState<string[]>([]);
   const [keyword] = useState(searchParams.get('keyword') || '');
   const [city] = useState(searchParams.get('city') || '上海');
   const [starRating] = useState(Number(searchParams.get('starRating')) || 0);
   const [priceRange] = useState(searchParams.get('priceRange') || '');
+  const [facilitiesFilter] = useState(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
   const [sortBy, setSortBy] = useState('popular');
   const checkInParam = searchParams.get('checkIn');
   const checkOutParam = searchParams.get('checkOut');
@@ -65,6 +67,18 @@ const HotelList: React.FC = () => {
 
   // Parse price range once
   const { minPrice, maxPrice } = parsePriceRange(priceRange);
+
+  // 辅助函数：获取酒店最低价格
+  const getMinPrice = useCallback((hotel: Hotel) => {
+    const prices = hotel.roomTypes?.map((r: any) => Number(r?.price)).filter((n: number) => !Number.isNaN(n) && n > 0) || [];
+    return prices.length ? Math.min(...prices) : 999999;
+  }, []);
+
+  // 辅助函数：获取酒店原价
+  const getOriginalPrice = useCallback((hotel: Hotel) => {
+    const prices = hotel.roomTypes?.map((r: any) => Number(r?.originalPrice)).filter((n: number) => !Number.isNaN(n) && n > 0) || [];
+    return prices.length ? Math.min(...prices) : 0;
+  }, []);
 
   const loadPage = useCallback(
     async (pageNum: number, append: boolean) => {
@@ -79,12 +93,25 @@ const HotelList: React.FC = () => {
         if (minPrice !== undefined) params.minPrice = minPrice;
         if (maxPrice !== undefined) params.maxPrice = maxPrice;
         const res = await publicHotelApi.getList(params);
-        if (append) {
-          setList((prev) => [...prev, ...(res.data || [])]);
-        } else {
-          setList(res.data || []);
+        let filteredData = res.data || [];
+        
+        // 前端根据设施筛选
+        if (facilitiesFilter.length > 0) {
+          filteredData = filteredData.filter((hotel) => {
+            return facilitiesFilter.every((facility) => 
+              hotel.facilities?.includes(facility)
+            );
+          });
         }
-        setTotal(res.total || 0);
+        
+        if (append) {
+          setList((prev) => [...prev, ...filteredData]);
+        } else {
+          setList(filteredData);
+          // 从酒店数据中提取常见设施作为快捷标签
+          extractQuickTags(filteredData);
+        }
+        setTotal(facilitiesFilter.length > 0 ? filteredData.length : (res.total || 0));
         setPage(pageNum);
       } catch (e) {
         const msg = (e as any)?.message || '加载失败，请检查网络或稍后重试';
@@ -100,8 +127,77 @@ const HotelList: React.FC = () => {
         setLoadingMore(false);
       }
     },
-    [keyword, city, starRating, minPrice, maxPrice],
+    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter],
   );
+
+  // 从酒店列表中提取常见设施作为快捷标签
+  const extractQuickTags = (hotels: Hotel[]) => {
+    const facilityCount: Record<string, number> = {};
+    hotels.forEach((hotel) => {
+      hotel.facilities?.forEach((facility) => {
+        facilityCount[facility] = (facilityCount[facility] || 0) + 1;
+      });
+    });
+    // 按出现频率排序，取前5个
+    const sortedTags = Object.entries(facilityCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([tag]) => tag);
+    setQuickTags(sortedTags);
+  };
+
+  // 排序处理
+  const handleSort = (sortKey: string) => {
+    setSortBy(sortKey);
+    if (sortKey === 'filter') {
+      message.info('筛选功能开发中');
+      return;
+    }
+    
+    // 对当前列表进行排序
+    const sorted = [...list].sort((a, b) => {
+      if (sortKey === 'price') {
+        const priceA = getMinPrice(a);
+        const priceB = getMinPrice(b);
+        console.log(`排序: ${a.nameCn} (¥${priceA}) vs ${b.nameCn} (¥${priceB})`);
+        // 价格从低到高排序
+        return priceA - priceB;
+      }
+      if (sortKey === 'distance') {
+        // 模拟距离排序（实际需要地理位置数据）
+        return a.id - b.id;
+      }
+      // popular - 默认排序（按ID）
+      return a.id - b.id;
+    });
+    
+    console.log('排序后列表:', sorted.map(h => `${h.nameCn}: ¥${getMinPrice(h)}`));
+    setList(sorted);
+  };
+
+  // 快捷标签点击处理
+  const handleTagClick = (tag: string) => {
+    const isSelected = selectedTags.includes(tag);
+    let newSelectedTags: string[];
+    if (isSelected) {
+      newSelectedTags = selectedTags.filter((t) => t !== tag);
+    } else {
+      newSelectedTags = [...selectedTags, tag];
+    }
+    setSelectedTags(newSelectedTags);
+    
+    // 更新URL参数并重新加载
+    const params = new URLSearchParams(searchParams.toString());
+    if (newSelectedTags.length > 0) {
+      params.set('facilities', newSelectedTags.join(','));
+    } else {
+      params.delete('facilities');
+    }
+    navigate(`/hotels?${params.toString()}`, { replace: true });
+    
+    // 重新加载数据
+    window.location.reload();
+  };
 
   useEffect(() => {
     loadPage(1, false);
@@ -120,16 +216,6 @@ const HotelList: React.FC = () => {
     el.addEventListener('scroll', handleScroll, { passive: true });
     return () => el.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
-
-  const getMinPrice = (hotel: Hotel) => {
-    const prices = hotel.roomTypes?.map((r: any) => Number(r?.price)).filter((n: number) => !Number.isNaN(n)) || [];
-    return prices.length ? Math.min(...prices) : 0;
-  };
-
-  const getOriginalPrice = (hotel: Hotel) => {
-    const prices = hotel.roomTypes?.map((r: any) => Number(r?.originalPrice)).filter((n: number) => !Number.isNaN(n) && n > 0) || [];
-    return prices.length ? Math.min(...prices) : 0;
-  };
 
   const getTags = (hotel: Hotel) => {
     const tags: string[] = [];
@@ -179,15 +265,26 @@ const HotelList: React.FC = () => {
           <span
             key={opt.key}
             className={`ctrip-list-filter-item ${sortBy === opt.key ? 'active' : ''}`}
-            onClick={() => setSortBy(opt.key)}
+            onClick={() => handleSort(opt.key)}
           >
             {opt.label}
           </span>
         ))}
       </div>
+      
+      {/* 显示酒店数量 */}
+      {!loading && !loadError && total > 0 && (
+        <div className="ctrip-list-count">
+          共找到 <span className="count-num">{total}</span> 家酒店
+        </div>
+      )}
       <div className="ctrip-list-quick-tags">
-        {QUICK_TAGS.map((tag) => (
-          <span key={tag} className="ctrip-list-quick-tag">
+        {quickTags.map((tag) => (
+          <span
+            key={tag}
+            className={`ctrip-list-quick-tag ${selectedTags.includes(tag) ? 'active' : ''}`}
+            onClick={() => handleTagClick(tag)}
+          >
             {tag}
           </span>
         ))}
@@ -244,7 +341,7 @@ const HotelList: React.FC = () => {
                         <span className="score-num">{score}</span>
                         <span className="score-label">{getRatingLabel(score)}</span>
                       </div>
-                      <span className="ctrip-score-text">{reviews}点评 · {favorites}收藏 · "{getRatingLabel(score)}推荐"</span>
+                      <span className="ctrip-score-text">{reviews}点评 · {favorites}收藏</span>
                     </div>
 
                     <div className="ctrip-list-card-nearby">

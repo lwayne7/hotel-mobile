@@ -30,8 +30,6 @@ const POPULAR_CITIES = [
   '南京', '武汉', '厦门', '青岛', '重庆', '苏州', '长沙', '昆明',
 ];
 
-const QUICK_TAGS = ['亲子', '豪华', '免费停车场', '含早餐', '健身房'];
-
 const Search: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('domestic');
@@ -46,16 +44,37 @@ const Search: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [quickTags, setQuickTags] = useState<string[]>([]);
   const [gpsLoading, setGpsLoading] = useState(false);
 
   const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
 
   useEffect(() => {
     publicHotelApi
-      .getList({ page: 1, pageSize: 5 })
-      .then((res) => setBannerHotels(res.data || []))
+      .getList({ page: 1, pageSize: 20 })
+      .then((res) => {
+        setBannerHotels(res.data || []);
+        // 提取常见设施作为快捷标签
+        extractQuickTags(res.data || []);
+      })
       .catch((e: any) => message.error(e?.message || '加载失败'));
   }, []);
+
+  // 从酒店列表中提取常见设施作为快捷标签
+  const extractQuickTags = (hotels: any[]) => {
+    const facilityCount: Record<string, number> = {};
+    hotels.forEach((hotel) => {
+      hotel.facilities?.forEach((facility: string) => {
+        facilityCount[facility] = (facilityCount[facility] || 0) + 1;
+      });
+    });
+    // 按出现频率排序，取前3个
+    const sortedTags = Object.entries(facilityCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tag]) => tag);
+    setQuickTags(sortedTags);
+  };
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -65,6 +84,10 @@ const Search: React.FC = () => {
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     if (starRating > 0) params.set('starRating', String(starRating));
     if (priceRange !== '不限') params.set('priceRange', priceRange);
+    // 将选中的标签作为设施筛选条件传递
+    if (selectedTags.length > 0) {
+      params.set('facilities', selectedTags.join(','));
+    }
     navigate(`/hotels?${params.toString()}`);
   };
 
@@ -234,7 +257,7 @@ const Search: React.FC = () => {
               <span className="price-sub">{getFilterSummary()}</span>
             </div>
             <div className="quick-tags-clean">
-              {QUICK_TAGS.slice(0, 3).map((t) => (
+              {quickTags.map((t) => (
                 <span
                   key={t}
                   className={`quick-tag-item ${selectedTags.includes(t) ? 'active' : ''}`}
