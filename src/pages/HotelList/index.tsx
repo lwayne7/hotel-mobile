@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Button, Spin, Empty, message } from 'antd';
+import { Button, Spin, Empty, message, Modal, DatePicker, Input } from 'antd';
 import { LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
@@ -57,10 +57,21 @@ const HotelList: React.FC = () => {
   const [facilitiesFilter] = useState(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
   const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
   const [sortBy, setSortBy] = useState('popular');
+  
+  // 日期参数
   const checkInParam = searchParams.get('checkIn');
   const checkOutParam = searchParams.get('checkOut');
   const checkIn = checkInParam ? dayjs(checkInParam) : dayjs();
   const checkOut = checkOutParam ? dayjs(checkOutParam) : dayjs().add(1, 'day');
+  
+  // 弹窗状态
+  const [showCityModal, setShowCityModal] = useState(false);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [showKeywordModal, setShowKeywordModal] = useState(false);
+  const [tempCity, setTempCity] = useState(city);
+  const [tempCheckIn, setTempCheckIn] = useState(checkIn);
+  const [tempCheckOut, setTempCheckOut] = useState(checkOut);
+  const [tempKeyword, setTempKeyword] = useState(keyword);
 
   const hasMore = list.length < total;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -239,18 +250,55 @@ const HotelList: React.FC = () => {
     // 若后续有地图页可跳转
   };
 
+  // 城市选择
+  const POPULAR_CITIES = [
+    '北京', '上海', '广州', '深圳', '杭州', '成都', '西安', '三亚',
+    '南京', '武汉', '厦门', '青岛', '重庆', '苏州', '长沙', '昆明',
+  ];
+
+  const handleCityConfirm = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('city', tempCity);
+    navigate(`/hotels?${params.toString()}`);
+    setShowCityModal(false);
+    window.location.reload();
+  };
+
+  // 日期选择
+  const handleDateConfirm = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tempCheckIn) params.set('checkIn', tempCheckIn.format('YYYY-MM-DD'));
+    if (tempCheckOut) params.set('checkOut', tempCheckOut.format('YYYY-MM-DD'));
+    navigate(`/hotels?${params.toString()}`);
+    setShowDateModal(false);
+    window.location.reload();
+  };
+
+  // 关键词搜索
+  const handleKeywordConfirm = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tempKeyword.trim()) {
+      params.set('keyword', tempKeyword.trim());
+    } else {
+      params.delete('keyword');
+    }
+    navigate(`/hotels?${params.toString()}`);
+    setShowKeywordModal(false);
+    window.location.reload();
+  };
+
   return (
     <div className="ctrip-list" ref={containerRef}>
       {/* Consolidated Header */}
       <header className="ctrip-list-header-complex">
         <Button type="text" icon={<LeftOutlined />} onClick={() => navigate('/')} className="ctrip-back-btn" />
         <div className="ctrip-list-search-box">
-          <div className="search-box-row">
-            <span className="search-city">{city}</span>
+          <div className="search-box-row" onClick={() => setShowDateModal(true)}>
+            <span className="search-city" onClick={(e) => { e.stopPropagation(); setShowCityModal(true); }}>{city}</span>
             <span className="search-dates">{checkIn.format('MM-DD')} 住 {checkOut.format('MM-DD')} 离</span>
             <span className="search-nights">共{Math.max(1, checkOut.diff(checkIn, 'day'))}晚</span>
           </div>
-          <div className="search-box-input">
+          <div className="search-box-input" onClick={() => setShowKeywordModal(true)}>
             {keyword || '位置/品牌/酒店'}
           </div>
         </div>
@@ -385,6 +433,103 @@ const HotelList: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* 城市选择弹窗 */}
+      <Modal
+        title="选择城市"
+        open={showCityModal}
+        onCancel={() => setShowCityModal(false)}
+        onOk={handleCityConfirm}
+        okText="确定"
+        cancelText="取消"
+        centered
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '12px 0' }}>
+          {POPULAR_CITIES.map((c) => (
+            <div
+              key={c}
+              onClick={() => setTempCity(c)}
+              style={{
+                padding: '8px',
+                textAlign: 'center',
+                background: tempCity === c ? '#e6f4ff' : '#f5f5f5',
+                color: tempCity === c ? '#0086f6' : '#333',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: tempCity === c ? 600 : 400,
+              }}
+            >
+              {c}
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      {/* 日期选择弹窗 */}
+      <Modal
+        title="选择入住和离店日期"
+        open={showDateModal}
+        onCancel={() => setShowDateModal(false)}
+        onOk={handleDateConfirm}
+        okText="确定"
+        cancelText="取消"
+        centered
+        width={400}
+      >
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>入住日期</div>
+            <DatePicker
+              value={tempCheckIn}
+              onChange={(date) => {
+                setTempCheckIn(date);
+                if (date && (!tempCheckOut || !tempCheckOut.isAfter(date, 'day'))) {
+                  setTempCheckOut(date.add(1, 'day'));
+                }
+              }}
+              disabledDate={(current) => current < dayjs().startOf('day')}
+              style={{ width: '100%' }}
+              format="YYYY-MM-DD"
+            />
+          </div>
+          <div>
+            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>离店日期</div>
+            <DatePicker
+              value={tempCheckOut}
+              onChange={(date) => setTempCheckOut(date)}
+              disabledDate={(current) => !!tempCheckIn && current <= tempCheckIn}
+              style={{ width: '100%' }}
+              format="YYYY-MM-DD"
+            />
+          </div>
+          <div style={{ marginTop: '12px', fontSize: '14px', color: '#0086f6', textAlign: 'center' }}>
+            共 {tempCheckIn && tempCheckOut ? Math.max(1, tempCheckOut.diff(tempCheckIn, 'day')) : 0} 晚
+          </div>
+        </div>
+      </Modal>
+
+      {/* 关键词搜索弹窗 */}
+      <Modal
+        title="搜索酒店"
+        open={showKeywordModal}
+        onCancel={() => setShowKeywordModal(false)}
+        onOk={handleKeywordConfirm}
+        okText="搜索"
+        cancelText="取消"
+        centered
+      >
+        <div style={{ padding: '12px 0' }}>
+          <Input
+            placeholder="输入位置/品牌/酒店名称"
+            value={tempKeyword}
+            onChange={(e) => setTempKeyword(e.target.value)}
+            onPressEnter={handleKeywordConfirm}
+            allowClear
+            size="large"
+          />
+        </div>
+      </Modal>
     </div>
   );
 };
