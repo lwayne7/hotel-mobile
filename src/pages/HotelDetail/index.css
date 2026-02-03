@@ -172,17 +172,28 @@
 .ctrip-detail-name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .ctrip-detail-name {
   font-size: 20px;
   font-weight: 700;
   color: #333;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
 }
 
 .ctrip-detail-rate {
   font-size: 11px !important;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .ctrip-detail-badges {
