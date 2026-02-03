@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Button, Rate, Spin, Carousel } from 'antd';
+import { Button, Rate, Spin, Carousel, Modal, DatePicker } from 'antd';
 import {
   LeftOutlined,
   HeartOutlined,
@@ -25,18 +25,44 @@ const HotelDetail: React.FC = () => {
   const [collected, setCollected] = useState(false);
   const [showNavHeader, setShowNavHeader] = useState(false);
   const roomsRef = useRef<HTMLDivElement | null>(null);
-  const [checkIn] = useState<dayjs.Dayjs | null>(
+  const [checkIn, setCheckIn] = useState<dayjs.Dayjs>(
     searchParams.get('checkIn') ? dayjs(searchParams.get('checkIn')) : dayjs(),
   );
-  const [checkOut] = useState<dayjs.Dayjs | null>(
+  const [checkOut, setCheckOut] = useState<dayjs.Dayjs>(
     searchParams.get('checkOut') ? dayjs(searchParams.get('checkOut')) : dayjs().add(1, 'day'),
   );
   const [roomFilter, setRoomFilter] = useState<string | null>(null);
+  
+  // 日期选择弹窗状态
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [tempCheckIn, setTempCheckIn] = useState(checkIn);
+  const [tempCheckOut, setTempCheckOut] = useState(checkOut);
 
   const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
   const today = dayjs().startOf('day');
   const checkInLabel = checkIn ? (checkIn.isSame(today, 'day') ? '今天' : checkIn.isSame(today.add(1, 'day'), 'day') ? '明天' : '') : '';
   const checkOutLabel = checkOut ? (checkOut.isSame(today, 'day') ? '今天' : checkOut.isSame(today.add(1, 'day'), 'day') ? '明天' : '') : '';
+
+  // 日期选择确认处理
+  const handleDateConfirm = () => {
+    setCheckIn(tempCheckIn);
+    setCheckOut(tempCheckOut);
+    
+    // 更新URL参数
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('checkIn', tempCheckIn.format('YYYY-MM-DD'));
+    params.set('checkOut', tempCheckOut.format('YYYY-MM-DD'));
+    navigate(`/hotels/${id}?${params.toString()}`, { replace: true });
+    
+    setShowDateModal(false);
+  };
+
+  // 打开日期选择弹窗
+  const handleDateClick = () => {
+    setTempCheckIn(checkIn);
+    setTempCheckOut(checkOut);
+    setShowDateModal(true);
+  };
 
   // Handle scroll to show/hide navigation header
   const handleScroll = useCallback(() => {
@@ -205,7 +231,7 @@ const HotelDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="ctrip-detail-dates-card">
+      <div className="ctrip-detail-dates-card" onClick={handleDateClick}>
         <div className="dates-row">
           <span className="date-val">{checkIn?.format('MM月DD日')}</span>
           <span className="date-label">{checkInLabel}</span>
@@ -283,6 +309,52 @@ const HotelDetail: React.FC = () => {
           查看房型
         </Button>
       </div>
+
+      {/* 日期选择弹窗 */}
+      <Modal
+        title="选择入住和离店日期"
+        open={showDateModal}
+        onCancel={() => setShowDateModal(false)}
+        onOk={handleDateConfirm}
+        okText="确定"
+        cancelText="取消"
+        centered
+        width={400}
+      >
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>入住日期</div>
+            <DatePicker
+              value={tempCheckIn}
+              onChange={(date) => {
+                if (date) {
+                  setTempCheckIn(date);
+                  // 如果离店日期不在入住日期之后,自动设置为入住日期+1天
+                  if (!tempCheckOut || !tempCheckOut.isAfter(date, 'day')) {
+                    setTempCheckOut(date.add(1, 'day'));
+                  }
+                }
+              }}
+              disabledDate={(current) => current < dayjs().startOf('day')}
+              style={{ width: '100%' }}
+              format="YYYY-MM-DD"
+            />
+          </div>
+          <div>
+            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>离店日期</div>
+            <DatePicker
+              value={tempCheckOut}
+              onChange={(date) => date && setTempCheckOut(date)}
+              disabledDate={(current) => current <= tempCheckIn}
+              style={{ width: '100%' }}
+              format="YYYY-MM-DD"
+            />
+          </div>
+          <div style={{ marginTop: '12px', fontSize: '14px', color: '#0086f6', textAlign: 'center' }}>
+            共 {Math.max(1, tempCheckOut.diff(tempCheckIn, 'day'))} 晚
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

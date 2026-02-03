@@ -323,6 +323,17 @@
   background: #fff;
   border-radius: 12px;
   padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ctrip-detail-dates-card:hover {
+  background: #f9faff;
+}
+
+.ctrip-detail-dates-card:active {
+  transform: scale(0.98);
+  background: #f5f7fa;
 }
 
 .dates-row {
