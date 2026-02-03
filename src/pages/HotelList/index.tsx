@@ -410,8 +410,7 @@ const HotelList: React.FC = () => {
                     </div>
 
                     <div className="ctrip-list-card-tags">
-                      <span className="ctrip-tag-boss">BOSS推荐</span>
-                      {tags.slice(0, 2).map((t) => (
+                      {tags.slice(0, 3).map((t) => (
                         <span key={t} className="ctrip-list-tag">{t}</span>
                       ))}
                     </div>
