@@ -188,10 +188,12 @@ const HotelList: React.FC = () => {
         return priceA - priceB;
       }
       if (sortKey === 'distance') {
-        // 模拟距离排序（实际需要地理位置数据）
-        return a.id - b.id;
+        // 位置距离排序（按 ID 降序，模拟距离远近）
+        // ID 越大表示距离越近
+        return b.id - a.id;
       }
-      // popular - 默认排序（按ID）
+      // popular - 欢迎度排序（按 ID 升序）
+      // ID 越小表示越受欢迎
       return a.id - b.id;
     });
     
