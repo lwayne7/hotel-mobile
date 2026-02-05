@@ -141,9 +141,14 @@ const Search: React.FC = () => {
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    // 点击标签后立即跳转到列表页
+    const params = new URLSearchParams();
+    if (city.trim()) params.set('city', city.trim());
+    if (checkIn) params.set('checkIn', checkIn.format('YYYY-MM-DD'));
+    if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
+    // 设置设施筛选参数
+    params.set('facilities', tag);
+    navigate(`/hotels?${params.toString()}`);
   };
 
   const handleCheckInChange = (date: dayjs.Dayjs | null) => {
