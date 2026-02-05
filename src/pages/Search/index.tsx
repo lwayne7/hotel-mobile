@@ -165,7 +165,7 @@ const Search: React.FC = () => {
     const starLabel = STAR_OPTIONS.find((s) => s.value === starRating)?.label;
     if (starRating > 0 && starLabel) parts.push(starLabel);
     if (priceRange !== '不限') parts.push(priceRange);
-    return parts.length > 0 ? parts.join('/') : '低价/高档';
+    return parts.length > 0 ? parts.join('/') : '';
   };
 
   return (
