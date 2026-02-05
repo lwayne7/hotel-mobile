@@ -50,15 +50,24 @@ const Search: React.FC = () => {
   const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
 
   useEffect(() => {
-    publicHotelApi
-      .getList({ page: 1, pageSize: 20 })
-      .then((res) => {
-        setBannerHotels(res.data || []);
-        // 提取常见设施作为快捷标签
-        extractQuickTags(res.data || []);
-      })
-      .catch((e: any) => message.error(e?.message || '加载失败'));
-  }, []);
+    // 根据城市加载推荐酒店
+    const loadRecommendHotels = () => {
+      const params: any = { page: 1, pageSize: 20 };
+      if (city) {
+        params.city = city;
+      }
+      publicHotelApi
+        .getList(params)
+        .then((res) => {
+          setBannerHotels(res.data || []);
+          // 提取常见设施作为快捷标签
+          extractQuickTags(res.data || []);
+        })
+        .catch((e: any) => message.error(e?.message || '加载失败'));
+    };
+    
+    loadRecommendHotels();
+  }, [city]); // 依赖城市变化
 
   // 从酒店列表中提取常见设施作为快捷标签
   const extractQuickTags = (hotels: any[]) => {
