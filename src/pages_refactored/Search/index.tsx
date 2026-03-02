@@ -4,7 +4,7 @@ import { EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
 import { useDateSelection, useCitySelection } from '../../hooks';
-import { extractQuickTags } from '../../utils/hotelUtils';
+import { extractQuickTags } from '../../utils/hotel';
 import DateSelectionModal from '../../components/DateSelectionModal';
 import CitySelectionModal from '../../components/CitySelectionModal';
 import { POPULAR_CITIES } from '../../constants/hotelConstants';
