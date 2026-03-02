@@ -1,0 +1,28 @@
+/* 城市选择模态框样式 */
+.ctrip-city-modal .city-modal-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.ctrip-city-modal .city-modal-item {
+  padding: 10px 8px;
+  text-align: center;
+  border-radius: 6px;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: #333;
+}
+
+.ctrip-city-modal .city-modal-item:hover {
+  background: #e6f7ff;
+  color: #0086f6;
+}
+
+.ctrip-city-modal .city-modal-item.active {
+  background: #0086f6;
+  color: #fff;
+}

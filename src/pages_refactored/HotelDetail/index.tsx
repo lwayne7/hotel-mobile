@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Button, Rate, Spin, Carousel, Modal, DatePicker } from 'antd';
+import { Button, Rate, Spin, Carousel } from 'antd';
 import {
   LeftOutlined,
   HeartOutlined,
@@ -8,8 +8,8 @@ import {
   SoundOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { publicHotelApi } from '../../services/api';
-import type { Hotel } from '../../services/api';
+import { useHotelDetail, useDateSelection } from '../../hooks';
+import DateSelectionModal from '../../components/DateSelectionModal';
 import dayjs from 'dayjs';
 import './index.css';
 
@@ -19,18 +19,27 @@ const HotelDetail: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  
+  // 使用酒店详情 Hook
+  const { hotel, loading, loadError } = useHotelDetail(id);
+  
+  // 使用日期选择 Hook
+  const {
+    checkIn,
+    checkOut,
+    nights,
+    checkInLabel,
+    checkOutLabel,
+    handleCheckInChange,
+    handleCheckOutChange,
+  } = useDateSelection({
+    initialCheckIn: searchParams.get('checkIn'),
+    initialCheckOut: searchParams.get('checkOut'),
+  });
+  
   const [collected, setCollected] = useState(false);
   const [showNavHeader, setShowNavHeader] = useState(false);
   const roomsRef = useRef<HTMLDivElement | null>(null);
-  const [checkIn, setCheckIn] = useState<dayjs.Dayjs>(
-    searchParams.get('checkIn') ? dayjs(searchParams.get('checkIn')) : dayjs(),
-  );
-  const [checkOut, setCheckOut] = useState<dayjs.Dayjs>(
-    searchParams.get('checkOut') ? dayjs(searchParams.get('checkOut')) : dayjs().add(1, 'day'),
-  );
   const [roomFilter, setRoomFilter] = useState<string | null>(null);
   
   // 日期选择弹窗状态
@@ -38,15 +47,10 @@ const HotelDetail: React.FC = () => {
   const [tempCheckIn, setTempCheckIn] = useState(checkIn);
   const [tempCheckOut, setTempCheckOut] = useState(checkOut);
 
-  const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
-  const today = dayjs().startOf('day');
-  const checkInLabel = checkIn ? (checkIn.isSame(today, 'day') ? '今天' : checkIn.isSame(today.add(1, 'day'), 'day') ? '明天' : '') : '';
-  const checkOutLabel = checkOut ? (checkOut.isSame(today, 'day') ? '今天' : checkOut.isSame(today.add(1, 'day'), 'day') ? '明天' : '') : '';
-
   // 日期选择确认处理
   const handleDateConfirm = () => {
-    setCheckIn(tempCheckIn);
-    setCheckOut(tempCheckOut);
+    handleCheckInChange(tempCheckIn);
+    handleCheckOutChange(tempCheckOut);
     
     // 更新URL参数
     const params = new URLSearchParams(searchParams.toString());
@@ -74,20 +78,6 @@ const HotelDetail: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
-
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    setLoadError(null);
-    publicHotelApi
-      .getById(parseInt(id, 10))
-      .then(setHotel)
-      .catch((e) => {
-        setHotel(null);
-        setLoadError((e as any)?.message || '加载失败，请稍后重试');
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
 
   const scrollToRooms = () => {
     roomsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -311,50 +301,21 @@ const HotelDetail: React.FC = () => {
       </div>
 
       {/* 日期选择弹窗 */}
-      <Modal
-        title="选择入住和离店日期"
+      <DateSelectionModal
         open={showDateModal}
+        checkIn={tempCheckIn}
+        checkOut={tempCheckOut}
+        onCheckInChange={(date) => {
+          setTempCheckIn(date);
+          // 如果离店日期不在入住日期之后,自动设置为入住日期+1天
+          if (!tempCheckOut.isAfter(date, 'day')) {
+            setTempCheckOut(date.add(1, 'day'));
+          }
+        }}
+        onCheckOutChange={setTempCheckOut}
         onCancel={() => setShowDateModal(false)}
-        onOk={handleDateConfirm}
-        okText="确定"
-        cancelText="取消"
-        centered
-        width={400}
-      >
-        <div style={{ padding: '12px 0' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>入住日期</div>
-            <DatePicker
-              value={tempCheckIn}
-              onChange={(date) => {
-                if (date) {
-                  setTempCheckIn(date);
-                  // 如果离店日期不在入住日期之后,自动设置为入住日期+1天
-                  if (!tempCheckOut || !tempCheckOut.isAfter(date, 'day')) {
-                    setTempCheckOut(date.add(1, 'day'));
-                  }
-                }
-              }}
-              disabledDate={(current) => current < dayjs().startOf('day')}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </div>
-          <div>
-            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>离店日期</div>
-            <DatePicker
-              value={tempCheckOut}
-              onChange={(date) => date && setTempCheckOut(date)}
-              disabledDate={(current) => current <= tempCheckIn}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </div>
-          <div style={{ marginTop: '12px', fontSize: '14px', color: '#0086f6', textAlign: 'center' }}>
-            共 {Math.max(1, tempCheckOut.diff(tempCheckIn, 'day'))} 晚
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDateConfirm}
+      />
     </div>
   );
 };

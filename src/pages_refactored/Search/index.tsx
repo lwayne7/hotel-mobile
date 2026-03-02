@@ -3,7 +3,11 @@ import { Input, Button, Typography, message, DatePicker, Modal, Segmented } from
 import { EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
-import dayjs from 'dayjs';
+import { useDateSelection, useCitySelection } from '../../hooks';
+import { extractQuickTags } from '../../utils/hotelUtils';
+import DateSelectionModal from '../../components/DateSelectionModal';
+import CitySelectionModal from '../../components/CitySelectionModal';
+import { POPULAR_CITIES } from '../../constants/hotelConstants';
 import './index.css';
 
 const { Title } = Typography;
@@ -25,29 +29,38 @@ const STAR_OPTIONS = [
 
 const PRICE_OPTIONS = ['不限', '¥150以下', '¥150-300', '¥300-450', '¥450-600', '¥600以上'];
 
-const POPULAR_CITIES = [
-  '北京', '上海', '广州', '深圳', '杭州', '成都', '西安', '三亚',
-  '南京', '武汉', '厦门', '青岛', '重庆', '苏州', '长沙', '昆明',
-];
-
 const Search: React.FC = () => {
   const navigate = useNavigate();
+  
+  // 使用日期选择 Hook
+  const {
+    checkIn,
+    checkOut,
+    nights,
+    checkInLabel,
+    checkOutLabel,
+    handleCheckInChange,
+    handleCheckOutChange,
+  } = useDateSelection();
+  
+  // 使用城市选择 Hook
+  const { city, gpsLoading, setCity, handleGpsLocation } = useCitySelection({
+    initialCity: '上海',
+  });
+  
   const [activeTab, setActiveTab] = useState('domestic');
   const [keyword, setKeyword] = useState('');
-  const [city, setCity] = useState('上海');
-  const [checkIn, setCheckIn] = useState<dayjs.Dayjs | null>(dayjs());
-  const [checkOut, setCheckOut] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'));
   const [starRating, setStarRating] = useState<number>(0);
   const [priceRange, setPriceRange] = useState<string>('不限');
   const [bannerHotels, setBannerHotels] = useState<any[]>([]);
-  const [showDatePicker, setShowDatePicker] = useState<'checkIn' | 'checkOut' | null>(null);
+  const [showDateModal, setShowDateModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showCityModal, setShowCityModal] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [quickTags, setQuickTags] = useState<string[]>([]);
-  const [gpsLoading, setGpsLoading] = useState(false);
-
-  const nights = checkIn && checkOut ? Math.max(1, checkOut.diff(checkIn, 'day')) : 1;
+  
+  // 临时日期状态（用于模态框）
+  const [tempCheckIn, setTempCheckIn] = useState(checkIn);
+  const [tempCheckOut, setTempCheckOut] = useState(checkOut);
 
   useEffect(() => {
     // 根据城市加载推荐酒店
@@ -61,29 +74,14 @@ const Search: React.FC = () => {
         .then((res) => {
           setBannerHotels(res.data || []);
           // 提取常见设施作为快捷标签
-          extractQuickTags(res.data || []);
+          const tags = extractQuickTags(res.data || []);
+          setQuickTags(tags);
         })
         .catch((e: any) => message.error(e?.message || '加载失败'));
     };
     
     loadRecommendHotels();
   }, [city]); // 依赖城市变化
-
-  // 从酒店列表中提取常见设施作为快捷标签
-  const extractQuickTags = (hotels: any[]) => {
-    const facilityCount: Record<string, number> = {};
-    hotels.forEach((hotel) => {
-      hotel.facilities?.forEach((facility: string) => {
-        facilityCount[facility] = (facilityCount[facility] || 0) + 1;
-      });
-    });
-    // 按出现频率排序，取前3个
-    const sortedTags = Object.entries(facilityCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([tag]) => tag);
-    setQuickTags(sortedTags);
-  };
 
   const handleSearch = () => {
     const params = new URLSearchParams();
@@ -93,46 +91,7 @@ const Search: React.FC = () => {
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     if (starRating > 0) params.set('starRating', String(starRating));
     if (priceRange !== '不限') params.set('priceRange', priceRange);
-    // 将选中的标签作为设施筛选条件传递
-    if (selectedTags.length > 0) {
-      params.set('facilities', selectedTags.join(','));
-    }
     navigate(`/hotels?${params.toString()}`);
-  };
-
-  // GPS定位功能
-  const handleGpsLocation = () => {
-    if (!navigator.geolocation) {
-      message.error('您的浏览器不支持定位功能');
-      return;
-    }
-    setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setGpsLoading(false);
-        // 简化处理：根据经纬度模拟城市匹配
-        const { longitude } = position.coords;
-        // 基于经度简单判断城市（实际应用需要使用地理编码API）
-        let detectedCity = '上海';
-        if (longitude < 110) detectedCity = '成都';
-        else if (longitude < 114) detectedCity = '广州';
-        else if (longitude < 117) detectedCity = '深圳';
-        else if (longitude < 120) detectedCity = '杭州';
-        else if (longitude < 122) detectedCity = '上海';
-        else detectedCity = '北京';
-        setCity(detectedCity);
-        message.success(`已定位到: ${detectedCity}`);
-      },
-      (error) => {
-        setGpsLoading(false);
-        if (error.code === 1) {
-          message.warning('定位权限被拒绝，请在浏览器设置中允许定位');
-        } else {
-          message.error('定位失败，请手动选择城市');
-        }
-      },
-      { timeout: 5000 }
-    );
   };
 
   const setCityAndSearch = (c: string) => {
@@ -151,18 +110,18 @@ const Search: React.FC = () => {
     navigate(`/hotels?${params.toString()}`);
   };
 
-  const handleCheckInChange = (date: dayjs.Dayjs | null) => {
-    setCheckIn(date);
-    // 自动调整离店日期
-    if (date && (!checkOut || !checkOut.isAfter(date, 'day'))) {
-      setCheckOut(date.add(1, 'day'));
-    }
-    setShowDatePicker(null);
+  // 打开日期选择弹窗
+  const handleDateClick = () => {
+    setTempCheckIn(checkIn);
+    setTempCheckOut(checkOut);
+    setShowDateModal(true);
   };
 
-  const handleCheckOutChange = (date: dayjs.Dayjs | null) => {
-    setCheckOut(date);
-    setShowDatePicker(null);
+  // 日期选择确认处理
+  const handleDateConfirm = () => {
+    handleCheckInChange(tempCheckIn);
+    handleCheckOutChange(tempCheckOut);
+    setShowDateModal(false);
   };
 
   const getFilterSummary = () => {
@@ -264,22 +223,22 @@ const Search: React.FC = () => {
 
           {/* 日期选择 */}
           <div className="ctrip-search-row date-row">
-            <div className="date-col" onClick={() => setShowDatePicker('checkIn')}>
+            <div className="date-col" onClick={handleDateClick}>
               <span className="date-label">入住</span>
               <div className="date-val-row">
-                <span className="date-val">{checkIn ? checkIn.format('MM月DD日') : '入住'}</span>
-                <span className="date-sub">{checkIn?.isSame(dayjs(), 'day') ? '今天' : checkIn?.isSame(dayjs().add(1, 'day'), 'day') ? '明天' : ''}</span>
+                <span className="date-val">{checkIn.format('MM月DD日')}</span>
+                <span className="date-sub">{checkInLabel}</span>
                 <CalendarOutlined className="date-icon" />
               </div>
             </div>
             <div className="date-nights">
               {nights}晚
             </div>
-            <div className="date-col" onClick={() => setShowDatePicker('checkOut')}>
+            <div className="date-col" onClick={handleDateClick}>
               <span className="date-label">离店</span>
               <div className="date-val-row">
-                <span className="date-val">{checkOut ? checkOut.format('MM月DD日') : '离店'}</span>
-                <span className="date-sub">{checkOut?.isSame(dayjs().add(1, 'day'), 'day') ? '明天' : ''}</span>
+                <span className="date-val">{checkOut.format('MM月DD日')}</span>
+                <span className="date-sub">{checkOutLabel}</span>
                 <CalendarOutlined className="date-icon" />
               </div>
             </div>
@@ -349,28 +308,21 @@ const Search: React.FC = () => {
       )}
 
       {/* 日期选择弹窗 */}
-      <Modal
-        title={showDatePicker === 'checkIn' ? '选择入住日期' : '选择离店日期'}
-        open={showDatePicker !== null}
-        onCancel={() => setShowDatePicker(null)}
-        footer={null}
-        centered
-        className="ctrip-date-modal"
-      >
-        <DatePicker
-          value={showDatePicker === 'checkIn' ? checkIn : checkOut}
-          onChange={showDatePicker === 'checkIn' ? handleCheckInChange : handleCheckOutChange}
-          disabledDate={(current) => {
-            if (showDatePicker === 'checkIn') {
-              return current < dayjs().startOf('day');
-            }
-            return !!checkIn && current <= checkIn;
-          }}
-          open
-          style={{ width: '100%' }}
-          getPopupContainer={(trigger) => trigger.parentElement!}
-        />
-      </Modal>
+      <DateSelectionModal
+        open={showDateModal}
+        checkIn={tempCheckIn}
+        checkOut={tempCheckOut}
+        onCheckInChange={(date) => {
+          setTempCheckIn(date);
+          // 如果离店日期不在入住日期之后,自动设置为入住日期+1天
+          if (!tempCheckOut.isAfter(date, 'day')) {
+            setTempCheckOut(date.add(1, 'day'));
+          }
+        }}
+        onCheckOutChange={setTempCheckOut}
+        onCancel={() => setShowDateModal(false)}
+        onConfirm={handleDateConfirm}
+      />
 
       {/* 星级/价格筛选弹窗 */}
       <Modal
@@ -413,29 +365,13 @@ const Search: React.FC = () => {
       </Modal>
 
       {/* 城市选择弹窗 */}
-      <Modal
-        title="选择城市"
+      <CitySelectionModal
         open={showCityModal}
+        currentCity={city}
+        cities={POPULAR_CITIES}
+        onCitySelect={setCity}
         onCancel={() => setShowCityModal(false)}
-        footer={null}
-        centered
-        className="ctrip-city-modal"
-      >
-        <div className="city-modal-list">
-          {POPULAR_CITIES.map((c) => (
-            <span
-              key={c}
-              className={`city-modal-item ${city === c ? 'active' : ''}`}
-              onClick={() => {
-                setCity(c);
-                setShowCityModal(false);
-              }}
-            >
-              {c}
-            </span>
-          ))}
-        </div>
-      </Modal>
+      />
     </div>
   );
 };
