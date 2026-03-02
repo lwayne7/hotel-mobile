@@ -5,10 +5,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
 import type { Hotel } from '../../services/api';
 import dayjs, { Dayjs } from 'dayjs';
+import VirtualList from './VirtualList';
 import './index.css';
 
 const PAGE_SIZE = 10;
-const ITEM_HEIGHT = 180; // 虚拟列表：每个酒店卡片的固定高度（px）
+const ITEM_HEIGHT = 180; // 每个酒店卡片的固定高度（px）
 
 const SORT_OPTIONS = [
   { key: 'popular', label: '欢迎度排序' },
@@ -41,7 +42,7 @@ const parsePriceRange = (range: string): { minPrice?: number; maxPrice?: number 
   return {};
 };
 
-const HotelList: React.FC = () => {
+const VirtualHotelList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [list, setList] = useState<Hotel[]>([]);
@@ -78,7 +79,14 @@ const HotelList: React.FC = () => {
   const [tempCheckOut, setTempCheckOut] = useState<Dayjs>(checkOut);
   const [tempKeyword, setTempKeyword] = useState(keyword);
 
-  const hasMore = list.length < total;
+  // 判断是否还有更多数据
+  // 如果有前端筛选，使用后端 total 判断（因为前端筛选后无法知道真实总数）
+  // 如果无前端筛选，直接使用 list.length < total
+  const hasFacilityFilter = facilitiesFilter.length > 0;
+  const hasMore = hasFacilityFilter 
+    ? page * PAGE_SIZE < total  // 前端筛选时，根据已加载的页数判断
+    : list.length < total;       // 无筛选时，根据列表长度判断
+  
   const { minPrice, maxPrice } = parsePriceRange(priceRange);
 
   // 辅助函数：获取酒店最低价格
@@ -155,7 +163,8 @@ const HotelList: React.FC = () => {
         setLoadingMore(false);
       }
     },
-    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')],
   );
 
   // 提取快捷标签
@@ -213,12 +222,13 @@ const HotelList: React.FC = () => {
     window.location.reload();
   };
 
+  // 初始加载数据
   useEffect(() => {
     loadPage(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')]);
 
-  // 虚拟列表：加载更多回调
+  // 加载更多回调
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
       loadPage(page + 1, true);
@@ -226,7 +236,7 @@ const HotelList: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, hasMore, loadingMore]);
 
-  // 虚拟列表：渲染单个酒店卡片
+  // 渲染单个酒店卡片
   const renderHotelCard = useCallback((hotel: Hotel) => {
     const minPrice = getMinPrice(hotel);
     const originalPrice = getOriginalPrice(hotel);
@@ -362,9 +372,10 @@ const HotelList: React.FC = () => {
       </div>
       
       {/* Count */}
-      {!loading && !loadError && total > 0 && (
+      {!loading && !loadError && (list.length > 0 || total > 0) && (
         <div className="ctrip-list-count">
-          共找到 <span className="count-num">{total}</span> 家酒店
+          共找到 <span className="count-num">{hasFacilityFilter ? list.length : total}</span> 家酒店
+          {hasFacilityFilter && <span style={{ fontSize: '12px', color: '#999', marginLeft: '4px' }}>(已筛选)</span>}
           <span className="virtual-badge">虚拟列表</span>
         </div>
       )}
@@ -514,4 +525,4 @@ const HotelList: React.FC = () => {
   );
 };
 
-export default HotelList;
+export default VirtualHotelList;
