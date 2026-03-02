@@ -6,6 +6,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import VirtualList from '../../components/VirtualList';
 import HotelCard from '../../components/HotelCard';
 import DateSelectionModal from '../../components/DateSelectionModal';
+import CitySelectionModal from '../../components/CitySelectionModal';
 import { useHotelList, useHotelPrice } from '../../hooks';
 import { parsePriceRange, extractQuickTags } from '../../utils';
 import { SORT_OPTIONS, POPULAR_CITIES, VIRTUAL_LIST_CONFIG } from '../../constants';
@@ -245,36 +246,16 @@ const VirtualHotelListRefactored: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <Modal
-        title="选择城市"
+      {/* 城市选择模态框 */}
+      <CitySelectionModal
         open={showCityModal}
+        currentCity={tempCity}
+        cities={POPULAR_CITIES}
+        onCitySelect={setTempCity}
         onCancel={() => setShowCityModal(false)}
-        onOk={handleCityConfirm}
-        okText="确定"
-        cancelText="取消"
-        centered
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '12px 0' }}>
-          {POPULAR_CITIES.map((c) => (
-            <div
-              key={c}
-              onClick={() => setTempCity(c)}
-              style={{
-                padding: '8px',
-                textAlign: 'center',
-                background: tempCity === c ? '#e6f4ff' : '#f5f5f5',
-                color: tempCity === c ? '#0086f6' : '#333',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: tempCity === c ? 600 : 400,
-              }}
-            >
-              {c}
-            </div>
-          ))}
-        </div>
-      </Modal>
+        needConfirm={true}
+        onConfirm={handleCityConfirm}
+      />
 
       {/* 日期选择模态框 */}
       <DateSelectionModal
