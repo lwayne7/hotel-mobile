@@ -256,7 +256,7 @@ const Search: React.FC = () => {
               {quickTags.map((t) => (
                 <span
                   key={t}
-                  className={`quick-tag-item ${selectedTags.includes(t) ? 'active' : ''}`}
+                  className="quick-tag-item"
                   onClick={() => toggleTag(t)}
                 >
                   {t}
