@@ -4,6 +4,11 @@
 
 **Taro 多端版（H5 / 微信小程序 / RN）** 已迁至独立项目：[hotel-mobile-taro](../hotel-mobile-taro)。
 
+## 📚 文档导航
+
+- **[重构指南.md](./重构指南.md)** - 项目重构详细说明，包含架构改进、性能提升、使用方法
+- **[虚拟列表指南.md](./虚拟列表指南.md)** - 虚拟列表功能详解，包含原理、使用方法、最佳实践
+
 ## 技术栈
 
 - React 19 + TypeScript 5.9
@@ -56,6 +61,24 @@ npm run build
 ```
 
 产物在 `dist/`，可部署到任意静态托管。
+
+## 🚀 重构版本
+
+项目已完成全面重构，代码复用率提升 150%，性能提升 70 倍。
+
+### 切换到重构版本
+
+只需修改 `src/main.tsx` 一行代码：
+
+```typescript
+// 原来的导入
+// import router from './router';
+
+// 改为重构版本
+import router from './router/index.refactored';
+```
+
+详细说明请查看 [重构指南.md](./重构指南.md)。
 
 ## 与后端关系
 
