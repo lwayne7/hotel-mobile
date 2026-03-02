@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { Button, Spin, Empty, message, Modal, DatePicker, Input } from 'antd';
+import { Button, Spin, Empty, message, Modal, Input } from 'antd';
 import { LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs, { Dayjs } from 'dayjs';
 import VirtualList from '../../components/VirtualList';
 import HotelCard from '../../components/HotelCard';
+import DateSelectionModal from '../../components/DateSelectionModal';
 import { useHotelList, useHotelPrice } from '../../hooks';
 import { parsePriceRange, extractQuickTags } from '../../utils';
 import { SORT_OPTIONS, POPULAR_CITIES, VIRTUAL_LIST_CONFIG } from '../../constants';
@@ -275,49 +276,21 @@ const VirtualHotelListRefactored: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal
-        title="选择入住和离店日期"
+      {/* 日期选择模态框 */}
+      <DateSelectionModal
         open={showDateModal}
+        checkIn={tempCheckIn}
+        checkOut={tempCheckOut}
+        onCheckInChange={(date) => {
+          setTempCheckIn(date);
+          if (!tempCheckOut.isAfter(date, 'day')) {
+            setTempCheckOut(date.add(1, 'day'));
+          }
+        }}
+        onCheckOutChange={(date) => setTempCheckOut(date)}
         onCancel={() => setShowDateModal(false)}
-        onOk={handleDateConfirm}
-        okText="确定"
-        cancelText="取消"
-        centered
-        width={400}
-      >
-        <div style={{ padding: '12px 0' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>入住日期</div>
-            <DatePicker
-              value={tempCheckIn}
-              onChange={(date) => {
-                if (date) {
-                  setTempCheckIn(date);
-                  if (!tempCheckOut.isAfter(date, 'day')) {
-                    setTempCheckOut(date.add(1, 'day'));
-                  }
-                }
-              }}
-              disabledDate={(current) => current < dayjs().startOf('day')}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </div>
-          <div>
-            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>离店日期</div>
-            <DatePicker
-              value={tempCheckOut}
-              onChange={(date) => date && setTempCheckOut(date)}
-              disabledDate={(current) => current <= tempCheckIn}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </div>
-          <div style={{ marginTop: '12px', fontSize: '14px', color: '#0086f6', textAlign: 'center' }}>
-            共 {Math.max(1, tempCheckOut.diff(tempCheckIn, 'day'))} 晚
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDateConfirm}
+      />
 
       <Modal
         title="搜索酒店"
