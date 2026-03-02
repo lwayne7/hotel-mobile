@@ -497,9 +497,11 @@ const HotelList: React.FC = () => {
             <DatePicker
               value={tempCheckIn}
               onChange={(date) => {
-                setTempCheckIn(date);
-                if (date && (!tempCheckOut || !tempCheckOut.isAfter(date, 'day'))) {
-                  setTempCheckOut(date.add(1, 'day'));
+                if (date) {
+                  setTempCheckIn(date);
+                  if (!tempCheckOut || !tempCheckOut.isAfter(date, 'day')) {
+                    setTempCheckOut(date.add(1, 'day'));
+                  }
                 }
               }}
               disabledDate={(current) => current < dayjs().startOf('day')}
@@ -511,7 +513,7 @@ const HotelList: React.FC = () => {
             <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>离店日期</div>
             <DatePicker
               value={tempCheckOut}
-              onChange={(date) => setTempCheckOut(date)}
+              onChange={(date) => date && setTempCheckOut(date)}
               disabledDate={(current) => !!tempCheckIn && current <= tempCheckIn}
               style={{ width: '100%' }}
               format="YYYY-MM-DD"
