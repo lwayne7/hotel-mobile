@@ -252,10 +252,7 @@ const VirtualHotelListRefactored: React.FC = () => {
         currentCity={tempCity}
         cities={POPULAR_CITIES}
         onCitySelect={setTempCity}
-        onCancel={() => {
-          setTempCity(city); // 取消时重置为原始城市
-          setShowCityModal(false);
-        }}
+        onCancel={() => setShowCityModal(false)}
         needConfirm={true}
         onConfirm={handleCityConfirm}
       />

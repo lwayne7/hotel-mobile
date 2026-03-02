@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Modal } from 'antd';
 import './index.css';
 
@@ -31,20 +31,10 @@ const CitySelectionModal: React.FC<CitySelectionModalProps> = ({
   needConfirm = false,
   onConfirm,
 }) => {
-  // 临时选中的城市（仅在确认模式下使用）
-  const [tempCity, setTempCity] = useState(currentCity);
-
-  // 当弹窗打开时，重置临时城市为当前城市
-  useEffect(() => {
-    if (open) {
-      setTempCity(currentCity);
-    }
-  }, [open, currentCity]);
-
   const handleCityClick = (city: string) => {
     if (needConfirm) {
-      // 确认模式：只更新临时状态
-      setTempCity(city);
+      // 确认模式：通过回调更新外部的临时状态
+      onCitySelect(city);
     } else {
       // 即时模式：立即选中并关闭
       onCitySelect(city);
@@ -54,7 +44,6 @@ const CitySelectionModal: React.FC<CitySelectionModalProps> = ({
 
   const handleConfirm = () => {
     if (needConfirm && onConfirm) {
-      onCitySelect(tempCity);
       onConfirm();
     }
   };
@@ -75,9 +64,7 @@ const CitySelectionModal: React.FC<CitySelectionModalProps> = ({
         {cities.map((city) => (
           <span
             key={city}
-            className={`city-modal-item ${
-              (needConfirm ? tempCity : currentCity) === city ? 'active' : ''
-            }`}
+            className={`city-modal-item ${currentCity === city ? 'active' : ''}`}
             onClick={() => handleCityClick(city)}
           >
             {city}
