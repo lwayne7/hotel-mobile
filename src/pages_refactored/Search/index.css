@@ -307,13 +307,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 0 20px;
+  gap: 12px;
 }
 
 .price-input {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  flex: 1;
+  flex-shrink: 0;
 }
 
 .price-val {
@@ -329,15 +330,35 @@
 
 .quick-tags-clean {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.quick-tags-clean::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .quick-tag-item {
   background: #f5f7fa;
   color: #666;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.quick-tag-item:hover {
+  background: var(--ctrip-blue-light);
+  color: var(--ctrip-blue);
+  border-color: var(--ctrip-blue);
 }
 
 /* CTA Button */
