@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Typography, message, DatePicker, Modal, Segmented } from 'antd';
+import { Input, Button, Typography, message, Modal, Segmented } from 'antd';
 import { EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
@@ -7,7 +7,7 @@ import { useDateSelection, useCitySelection } from '../../hooks';
 import { extractQuickTags } from '../../utils/hotel';
 import DateSelectionModal from '../../components/DateSelectionModal';
 import CitySelectionModal from '../../components/CitySelectionModal';
-import { POPULAR_CITIES } from '../../constants/hotelConstants';
+import { POPULAR_CITIES } from '../../constants/hotel';
 import './index.css';
 
 const { Title } = Typography;
@@ -276,7 +276,7 @@ const Search: React.FC = () => {
       <section className="ctrip-section">
         <Title level={5} className="ctrip-section-title">热门城市</Title>
         <div className="ctrip-city-chips">
-          {POPULAR_CITIES.map((c) => (
+          {POPULAR_CITIES.map((c: string) => (
             <span key={c} className="ctrip-chip" onClick={() => setCityAndSearch(c)}>
               {c}
             </span>
