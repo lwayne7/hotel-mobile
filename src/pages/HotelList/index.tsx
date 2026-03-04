@@ -112,14 +112,34 @@ const HotelList: React.FC = () => {
         }
         
         const res = await publicHotelApi.getList(params);
-        const data = res.data || [];
+        let data = res.data || [];
+        
+        // 价格排序由前端处理（后端按更新时间返回）
+        if (sortBy === 'price' && data.length > 0) {
+          data = [...data].sort((a, b) => {
+            const priceA = getMinPrice(a);
+            const priceB = getMinPrice(b);
+            return priceA - priceB;
+          });
+        }
         
         if (append) {
           // 追加数据时去重
           setList((prev) => {
             const existingIds = new Set(prev.map(h => h.id));
             const newData = data.filter(h => !existingIds.has(h.id));
-            return [...prev, ...newData];
+            let combined = [...prev, ...newData];
+            
+            // 价格排序时，追加后需要重新排序整个列表
+            if (sortBy === 'price' && combined.length > 0) {
+              combined = combined.sort((a, b) => {
+                const priceA = getMinPrice(a);
+                const priceB = getMinPrice(b);
+                return priceA - priceB;
+              });
+            }
+            
+            return combined;
           });
         } else {
           setList(data);
