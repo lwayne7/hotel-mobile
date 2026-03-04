@@ -3,7 +3,7 @@ import { Input, Button, Typography, message, Modal, Segmented, Carousel } from '
 import { EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
-import { useDateSelection, useCityLocation } from '../../hooks';
+import { useDateSelection, useCitySelection } from '../../hooks';
 import { extractQuickTags } from '../../utils/hotel';
 import DateSelectionModal from '../../components/DateSelectionModal';
 import CitySelectionModal from '../../components/CitySelectionModal';
@@ -43,11 +43,10 @@ const Search: React.FC = () => {
     handleCheckOutChange,
   } = useDateSelection();
   
-  // 使用城市定位 Hook
-  const { city, province, loading: gpsLoading, error: locationError, locate } = useCityLocation();
-  
-  // 城市状态
-  const [selectedCity, setSelectedCity] = useState(city);
+  // 使用城市选择 Hook（内置精准定位）
+  const { city, gpsLoading, setCity, handleGpsLocation } = useCitySelection({
+    initialCity: '上海',
+  });
   
   const [activeTab, setActiveTab] = useState('domestic');
   const [keyword, setKeyword] = useState('');
@@ -67,8 +66,8 @@ const Search: React.FC = () => {
     // 根据城市加载推荐酒店（用于轮播广告）
     const loadRecommendHotels = () => {
       const params: any = { page: 1, pageSize: 5 }; // 只加载5个用于轮播
-      if (selectedCity) {
-        params.city = selectedCity;
+      if (city) {
+        params.city = city;
       }
       publicHotelApi
         .getList(params)
@@ -82,26 +81,12 @@ const Search: React.FC = () => {
     };
     
     loadRecommendHotels();
-  }, [selectedCity]); // 依赖城市变化
-
-  // 监听定位结果
-  useEffect(() => {
-    if (city && !gpsLoading && !locationError) {
-      setSelectedCity(city);
-    }
-  }, [city, gpsLoading, locationError]);
-
-  // 监听定位错误
-  useEffect(() => {
-    if (locationError) {
-      message.error(locationError);
-    }
-  }, [locationError]);
+  }, [city]); // 依赖城市变化
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (keyword.trim()) params.set('keyword', keyword.trim());
-    if (selectedCity.trim()) params.set('city', selectedCity.trim());
+    if (city.trim()) params.set('city', city.trim());
     if (checkIn) params.set('checkIn', checkIn.format('YYYY-MM-DD'));
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     if (starRating > 0) params.set('starRating', String(starRating));
@@ -110,25 +95,19 @@ const Search: React.FC = () => {
   };
 
   const setCityAndSearch = (c: string) => {
-    setSelectedCity(c);
+    setCity(c);
     navigate(`/hotels?city=${encodeURIComponent(c)}`);
   };
 
   const toggleTag = (tag: string) => {
     // 点击标签后立即跳转到列表页
     const params = new URLSearchParams();
-    if (selectedCity.trim()) params.set('city', selectedCity.trim());
+    if (city.trim()) params.set('city', city.trim());
     if (checkIn) params.set('checkIn', checkIn.format('YYYY-MM-DD'));
     if (checkOut) params.set('checkOut', checkOut.format('YYYY-MM-DD'));
     // 设置设施筛选参数
     params.set('facilities', tag);
     navigate(`/hotels?${params.toString()}`);
-  };
-
-  // GPS 定位处理
-  const handleGpsLocation = () => {
-    if (gpsLoading) return;
-    locate();
   };
 
   // 打开日期选择弹窗
@@ -225,7 +204,7 @@ const Search: React.FC = () => {
         <div className="ctrip-search-form">
           <div className="ctrip-search-row city-row">
             <div className="ctrip-search-city" onClick={() => setShowCityModal(true)}>
-              <span className="city-text">{selectedCity || '选择城市'}</span>
+              <span className="city-text">{city || '选择城市'}</span>
             </div>
             <div className="ctrip-search-input-wrap">
               <Input
@@ -371,9 +350,9 @@ const Search: React.FC = () => {
       {/* 城市选择弹窗 */}
       <CitySelectionModal
         open={showCityModal}
-        currentCity={selectedCity}
+        currentCity={city}
         cities={POPULAR_CITIES}
-        onCitySelect={setSelectedCity}
+        onCitySelect={setCity}
         onCancel={() => setShowCityModal(false)}
       />
     </div>
