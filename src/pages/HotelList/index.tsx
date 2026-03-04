@@ -112,25 +112,26 @@ const HotelList: React.FC = () => {
         }
         
         const res = await publicHotelApi.getList(params);
-        let data = res.data || [];
-        
-        // 如果是价格排序，前端按最低价格重新排序
-        // 原因：后端按 roomTypes.price 排序，但一个酒店有多个房型
-        // 前端显示的是最低价格，需要重新排序保证顺序正确
-        if (sortBy === 'price' && data.length > 0) {
-          data = [...data].sort((a, b) => {
-            const priceA = getMinPrice(a);
-            const priceB = getMinPrice(b);
-            return priceA - priceB;
-          });
-        }
+        const data = res.data || [];
         
         if (append) {
           // 追加数据时去重
           setList((prev) => {
             const existingIds = new Set(prev.map(h => h.id));
             const newData = data.filter(h => !existingIds.has(h.id));
-            return [...prev, ...newData];
+            let combined = [...prev, ...newData];
+            
+            // 如果是价格排序，追加后需要重新排序整个列表
+            // 原因：后端分页返回的数据在各自页内是有序的，但跨页可能无序
+            if (sortBy === 'price' && combined.length > 0) {
+              combined = combined.sort((a, b) => {
+                const priceA = getMinPrice(a);
+                const priceB = getMinPrice(b);
+                return priceA - priceB;
+              });
+            }
+            
+            return combined;
           });
         } else {
           setList(data);
