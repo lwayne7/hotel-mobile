@@ -64,13 +64,8 @@ const HotelList: React.FC = () => {
   const [tempCheckOut, setTempCheckOut] = useState<Dayjs>(checkOut);
   const [tempKeyword, setTempKeyword] = useState(keyword);
 
-  // 判断是否有前端筛选
-  const hasFacilityFilter = facilitiesFilter.length > 0;
-  
   // 判断是否还有更多数据
-  const hasMore = hasFacilityFilter 
-    ? page * 10 < total
-    : list.length < total;
+  const hasMore = list.length < total;
 
   // 加载数据
   const loadPage = useCallback(
@@ -93,17 +88,18 @@ const HotelList: React.FC = () => {
         if (minPrice !== undefined) requestParams.minPrice = minPrice;
         if (maxPrice !== undefined) requestParams.maxPrice = maxPrice;
         
-        const res = await publicHotelApi.getList(requestParams);
-        let filteredData = res.data || [];
-        
-        // 前端根据设施筛选
-        if (hasFacilityFilter) {
-          filteredData = filteredData.filter((hotel) => {
-            return facilitiesFilter.every((facility) => 
-              hotel.facilities?.includes(facility)
-            );
-          });
+        // 使用后端排序
+        if (sortBy && sortBy !== 'popular') {
+          requestParams.sortBy = sortBy;
         }
+        
+        // 使用后端设施筛选（逗号分隔）
+        if (facilitiesFilter.length > 0) {
+          requestParams.facilities = facilitiesFilter.join(',');
+        }
+        
+        const res = await publicHotelApi.getList(requestParams);
+        const filteredData = res.data || [];
         
         if (append) {
           // 追加数据时去重
@@ -132,14 +128,14 @@ const HotelList: React.FC = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')],
+    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(','), sortBy],
   );
 
   // 初始加载
   useEffect(() => {
     loadPage(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')]);
+  }, [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(','), sortBy]);;
 
   // 加载更多
   const loadMore = useCallback(() => {
@@ -169,35 +165,6 @@ const HotelList: React.FC = () => {
     }
     
     setSortBy(sortKey);
-    
-    // 对当前列表进行排序
-    const sortedList = [...list];
-    
-    switch (sortKey) {
-      case 'popular':
-        // 按欢迎度排序（默认，按 ID 倒序）
-        sortedList.sort((a, b) => b.id - a.id);
-        break;
-        
-      case 'distance':
-        // 按位置距离排序（按 ID 正序，模拟从近到远）
-        sortedList.sort((a, b) => a.id - b.id);
-        break;
-        
-      case 'price':
-        // 按价格排序（从低到高）
-        sortedList.sort((a, b) => {
-          const priceA = getMinPrice(a);
-          const priceB = getMinPrice(b);
-          return priceA - priceB;
-        });
-        break;
-        
-      default:
-        break;
-    }
-    
-    setList(sortedList);
     
     // 触发虚拟列表滚动重置
     setScrollResetTrigger(prev => prev + 1);
@@ -305,8 +272,7 @@ const HotelList: React.FC = () => {
       {/* Count */}
       {!loading && !loadError && (list.length > 0 || total > 0) && (
         <div className="ctrip-list-count">
-          共找到 <span className="count-num">{hasFacilityFilter ? list.length : total}</span> 家酒店
-          {hasFacilityFilter && <span style={{ fontSize: '12px', color: '#999', marginLeft: '4px' }}>(已筛选)</span>}
+          共找到 <span className="count-num">{total}</span> 家酒店
         </div>
       )}
       
