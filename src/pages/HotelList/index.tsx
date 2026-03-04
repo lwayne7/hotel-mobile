@@ -112,7 +112,18 @@ const HotelList: React.FC = () => {
         }
         
         const res = await publicHotelApi.getList(params);
-        const data = res.data || [];
+        let data = res.data || [];
+        
+        // 如果是价格排序，前端按最低价格重新排序
+        // 原因：后端按 roomTypes.price 排序，但一个酒店有多个房型
+        // 前端显示的是最低价格，需要重新排序保证顺序正确
+        if (sortBy === 'price' && data.length > 0) {
+          data = [...data].sort((a, b) => {
+            const priceA = getMinPrice(a);
+            const priceB = getMinPrice(b);
+            return priceA - priceB;
+          });
+        }
         
         if (append) {
           // 追加数据时去重
