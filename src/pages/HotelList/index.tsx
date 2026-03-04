@@ -179,12 +179,8 @@ const HotelList: React.FC = () => {
         break;
         
       case 'distance':
-        // 按位置距离排序（暂时按地址长度模拟）
-        sortedList.sort((a, b) => {
-          const lenA = a.address?.length || 0;
-          const lenB = b.address?.length || 0;
-          return lenA - lenB;
-        });
+        // 按位置距离排序（按 ID 正序，模拟从近到远）
+        sortedList.sort((a, b) => a.id - b.id);
         break;
         
       case 'price':
