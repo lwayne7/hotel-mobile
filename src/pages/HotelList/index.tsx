@@ -274,7 +274,6 @@ const HotelList: React.FC = () => {
         <div className="ctrip-list-count">
           共找到 <span className="count-num">{hasFacilityFilter ? list.length : total}</span> 家酒店
           {hasFacilityFilter && <span style={{ fontSize: '12px', color: '#999', marginLeft: '4px' }}>(已筛选)</span>}
-          <span className="virtual-badge">虚拟列表·重构版</span>
         </div>
       )}
       

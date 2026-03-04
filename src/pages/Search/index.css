@@ -36,7 +36,34 @@
 .ctrip-search-banner-wrap {
   background: linear-gradient(180deg, #fff 0%, #f5f7fa 100%);
   padding: 10px 12px 60px;
-  cursor: pointer;
+}
+
+/* 轮播图容器样式 */
+.ctrip-search-banner-wrap .ant-carousel {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ctrip-search-banner-wrap .ant-carousel .slick-slide {
+  padding: 0;
+}
+
+/* 轮播指示点样式 */
+.ctrip-search-banner-wrap .banner-dots {
+  bottom: -30px;
+}
+
+.ctrip-search-banner-wrap .banner-dots li button {
+  background: rgba(102, 126, 234, 0.3);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.ctrip-search-banner-wrap .banner-dots li.slick-active button {
+  background: #667eea;
+  width: 20px;
+  border-radius: 4px;
 }
 
 .ctrip-search-banner-hotel {
@@ -49,6 +76,7 @@
   min-height: 120px;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   transition: transform 0.2s;
+  cursor: pointer;
 }
 
 .ctrip-search-banner-hotel:active {

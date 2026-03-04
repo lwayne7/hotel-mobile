@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Typography, message, Modal, Segmented } from 'antd';
+import { Input, Button, Typography, message, Modal, Segmented, Carousel } from 'antd';
 import { EnvironmentOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { publicHotelApi } from '../../services/api';
@@ -63,9 +63,9 @@ const Search: React.FC = () => {
   const [tempCheckOut, setTempCheckOut] = useState(checkOut);
 
   useEffect(() => {
-    // 根据城市加载推荐酒店
+    // 根据城市加载推荐酒店（用于轮播广告）
     const loadRecommendHotels = () => {
-      const params: any = { page: 1, pageSize: 20 };
+      const params: any = { page: 1, pageSize: 5 }; // 只加载5个用于轮播
       if (city) {
         params.city = city;
       }
@@ -138,44 +138,50 @@ const Search: React.FC = () => {
         <div className="ctrip-search-page-title">酒店查询页</div>
       </header>
 
-      {/* 酒店广告 Banner */}
-      {bannerHotels[0] && (
-        <div
-          className="ctrip-search-banner-wrap"
-          onClick={() => navigate(`/hotels/${bannerHotels[0].id}`)}
-        >
-          <div className="ctrip-search-banner-hotel">
-            {/* 左侧酒店图片 */}
-            <div className="banner-hotel-image">
-              {bannerHotels[0].images?.[0]?.imageUrl ? (
-                <img src={bannerHotels[0].images[0].imageUrl} alt={bannerHotels[0].nameCn} />
-              ) : (
-                <div className="banner-hotel-placeholder" />
-              )}
-              <div className="banner-hotel-badge">推荐</div>
-            </div>
-            
-            {/* 右侧酒店信息 */}
-            <div className="banner-hotel-info">
-              <div className="banner-hotel-name">{bannerHotels[0].nameCn}</div>
-              <div className="banner-hotel-rating">
-                {bannerHotels[0].starRating >= 5 && <span className="rating-stars">💎💎💎💎💎</span>}
-                {bannerHotels[0].starRating === 4 && <span className="rating-stars">⭐⭐⭐⭐</span>}
-                {bannerHotels[0].starRating === 3 && <span className="rating-stars">⭐⭐⭐</span>}
+      {/* 酒店广告轮播 */}
+      {bannerHotels.length > 0 && (
+        <div className="ctrip-search-banner-wrap">
+          <Carousel autoplay autoplaySpeed={3000} dots={{ className: 'banner-dots' }}>
+            {bannerHotels.map((hotel) => (
+              <div key={hotel.id}>
+                <div
+                  className="ctrip-search-banner-hotel"
+                  onClick={() => navigate(`/hotels/${hotel.id}`)}
+                >
+                  {/* 左侧酒店图片 */}
+                  <div className="banner-hotel-image">
+                    {hotel.images?.[0]?.imageUrl ? (
+                      <img src={hotel.images[0].imageUrl} alt={hotel.nameCn} />
+                    ) : (
+                      <div className="banner-hotel-placeholder" />
+                    )}
+                    <div className="banner-hotel-badge">推荐</div>
+                  </div>
+                  
+                  {/* 右侧酒店信息 */}
+                  <div className="banner-hotel-info">
+                    <div className="banner-hotel-name">{hotel.nameCn}</div>
+                    <div className="banner-hotel-rating">
+                      {hotel.starRating >= 5 && <span className="rating-stars">💎💎💎💎💎</span>}
+                      {hotel.starRating === 4 && <span className="rating-stars">⭐⭐⭐⭐</span>}
+                      {hotel.starRating === 3 && <span className="rating-stars">⭐⭐⭐</span>}
+                    </div>
+                    <div className="banner-hotel-address">
+                      📍 {hotel.address?.slice(0, 20)}
+                      {hotel.address && hotel.address.length > 20 ? '...' : ''}
+                    </div>
+                    <div className="banner-hotel-price">
+                      <span className="price-label">特惠价</span>
+                      <span className="price-value">
+                        ¥{hotel.roomTypes?.[0]?.price || '--'}
+                      </span>
+                      <span className="price-unit">起</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="banner-hotel-address">
-                📍 {bannerHotels[0].address?.slice(0, 20)}
-                {bannerHotels[0].address && bannerHotels[0].address.length > 20 ? '...' : ''}
-              </div>
-              <div className="banner-hotel-price">
-                <span className="price-label">特惠价</span>
-                <span className="price-value">
-                  ¥{bannerHotels[0].roomTypes?.[0]?.price || '--'}
-                </span>
-                <span className="price-unit">起</span>
-              </div>
-            </div>
-          </div>
+            ))}
+          </Carousel>
         </div>
       )}
 
@@ -283,29 +289,6 @@ const Search: React.FC = () => {
           ))}
         </div>
       </section>
-
-      {bannerHotels.length > 0 && (
-        <section className="ctrip-section">
-          <Title level={5} className="ctrip-section-title">推荐酒店</Title>
-          <div className="ctrip-banner-scroll">
-            {bannerHotels.map((h) => (
-              <div key={h.id} className="ctrip-banner-card" onClick={() => navigate(`/hotels/${h.id}`)}>
-                <div className="ctrip-banner-cover">
-                  {h.images?.[0]?.imageUrl ? (
-                    <img src={h.images[0].imageUrl} alt={h.nameCn} />
-                  ) : (
-                    <div className="ctrip-banner-placeholder" />
-                  )}
-                </div>
-                <div className="ctrip-banner-info">
-                  <div className="ctrip-banner-name">{h.nameCn}</div>
-                  <div className="ctrip-banner-addr">{h.address}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* 日期选择弹窗 */}
       <DateSelectionModal
