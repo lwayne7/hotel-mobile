@@ -114,6 +114,9 @@ const HotelList: React.FC = () => {
         const res = await publicHotelApi.getList(params);
         const data = res.data || [];
         
+        // 始终更新 total，确保显示正确的总数
+        setTotal(res.total || 0);
+        
         if (append) {
           // 追加数据时去重
           setList((prev) => {
@@ -123,7 +126,6 @@ const HotelList: React.FC = () => {
           });
         } else {
           setList(data);
-          setTotal(res.total || 0);
         }
         
         setPage(pageNum);
