@@ -99,7 +99,16 @@ const HotelList: React.FC = () => {
         }
         
         const res = await publicHotelApi.getList(requestParams);
-        const filteredData = res.data || [];
+        let filteredData = res.data || [];
+        
+        // 如果是价格排序，前端再次按最低价格排序（修正后端按房型价格排序的问题）
+        if (sortBy === 'price' && filteredData.length > 0) {
+          filteredData = [...filteredData].sort((a, b) => {
+            const priceA = getMinPrice(a);
+            const priceB = getMinPrice(b);
+            return priceA - priceB;
+          });
+        }
         
         if (append) {
           // 追加数据时去重
