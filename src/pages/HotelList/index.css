@@ -14,9 +14,48 @@
   background: var(--ctrip-bg-page);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 24px;
+  overflow: hidden;
+}
+
+/* 虚拟列表专用样式 */
+.ctrip-list-virtual {
+  overflow: hidden;
+}
+
+.ctrip-list-content-virtual {
+  flex: 1;
+  padding: 0 12px;
+  overflow: hidden;
+}
+
+.virtual-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* 虚拟列表容器 */
+.virtual-list-container {
+  width: 100%;
+}
+
+.virtual-list-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.virtual-list-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.virtual-list-container::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Consolidated Header */
@@ -172,12 +211,6 @@
   font-size: 14px;
 }
 
-/* Content */
-.ctrip-list-content {
-  flex: 1;
-  padding: 10px 12px;
-}
-
 /* Hotel Card */
 .ctrip-list-card {
   display: flex;
@@ -186,6 +219,13 @@
   overflow: hidden;
   margin-bottom: 10px;
   padding: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ctrip-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .ctrip-list-card-cover {
@@ -403,18 +443,6 @@
 }
 
 .ctrip-empty-hint {
-  font-size: 12px;
-  color: #999;
-}
-
-.ctrip-list-more {
-  text-align: center;
-  padding: 16px;
-}
-
-.ctrip-list-more-hint {
-  text-align: center;
-  padding: 16px;
   font-size: 12px;
   color: #999;
 }

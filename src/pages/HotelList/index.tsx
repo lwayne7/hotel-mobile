@@ -1,62 +1,34 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Button, Spin, Empty, message, Modal, DatePicker, Input } from 'antd';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button, Spin, Empty, message, Modal, Input } from 'antd';
 import { LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { publicHotelApi } from '../../services/api';
-import type { Hotel } from '../../services/api';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import VirtualList from '../../components/VirtualList';
+import HotelCard from '../../components/HotelCard';
+import DateSelectionModal from '../../components/DateSelectionModal';
+import CitySelectionModal from '../../components/CitySelectionModal';
+import { useHotelPrice } from '../../hooks';
+import { publicHotelApi, Hotel } from '../../services/api';
+import { parsePriceRange, extractQuickTags } from '../../utils';
+import { SORT_OPTIONS, POPULAR_CITIES, VIRTUAL_LIST_CONFIG } from '../../constants';
 import './index.css';
 
-const PAGE_SIZE = 10;
-const SORT_OPTIONS = [
-  { key: 'popular', label: '欢迎度排序' },
-  { key: 'distance', label: '位置距离' },
-  { key: 'price', label: '价格/星级' },
-  { key: 'filter', label: '筛选' },
-];
+const { ITEM_HEIGHT, BUFFER_COUNT, LOAD_MORE_OFFSET } = VIRTUAL_LIST_CONFIG;
 
-// 模拟点评数、收藏数（无后端时用 id 生成）
-const getReviewStats = (hotel: Hotel) => {
-  const base = (hotel.id * 137) % 8000 + 1000;
-  const reviews = base;
-  const favorites = Math.floor(base * (1.2 + (hotel.id % 10) * 0.1));
-  return { reviews, favorites: favorites >= 10000 ? (favorites / 10000).toFixed(1) + '万' : String(favorites) };
-};
-
-const getRatingLabel = (score: number) => {
-  if (score >= 4.8) return '超棒';
-  if (score >= 4.5) return '很棒';
-  if (score >= 4.0) return '不错';
-  return '好评';
-};
-
-// Parse price range string to minPrice/maxPrice
-const parsePriceRange = (range: string): { minPrice?: number; maxPrice?: number } => {
-  if (!range || range === '不限') return {};
-  if (range === '¥150以下') return { maxPrice: 150 };
-  if (range === '¥600以上') return { minPrice: 600 };
-  const match = range.match(/¥(\d+)-(\d+)/);
-  if (match) return { minPrice: Number(match[1]), maxPrice: Number(match[2]) };
-  return {};
-};
-
+/**
+ * 酒店列表页面（虚拟列表版本）
+ * 使用虚拟列表优化大数据渲染性能
+ */
 const HotelList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [list, setList] = useState<Hotel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [quickTags, setQuickTags] = useState<string[]>([]);
-  const [keyword] = useState(searchParams.get('keyword') || '');
-  const [city] = useState(searchParams.get('city') || '上海');
-  const [starRating] = useState(Number(searchParams.get('starRating')) || 0);
-  const [priceRange] = useState(searchParams.get('priceRange') || '');
-  const [facilitiesFilter] = useState(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
-  const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('facilities')?.split(',').filter(Boolean) || []);
-  const [sortBy, setSortBy] = useState('popular');
+  
+  // URL 参数
+  const keyword = searchParams.get('keyword') || '';
+  const city = searchParams.get('city') || '上海';
+  const starRating = Number(searchParams.get('starRating')) || 0;
+  const priceRange = searchParams.get('priceRange') || '';
+  const facilitiesFilter = searchParams.get('facilities')?.split(',').filter(Boolean) || [];
   
   // 日期参数
   const checkInParam = searchParams.get('checkIn');
@@ -64,59 +36,67 @@ const HotelList: React.FC = () => {
   const checkIn = checkInParam ? dayjs(checkInParam) : dayjs();
   const checkOut = checkOutParam ? dayjs(checkOutParam) : dayjs().add(1, 'day');
   
+  // 解析价格区间
+  const { minPrice, maxPrice } = parsePriceRange(priceRange);
+  
+  // 数据状态
+  const [list, setList] = useState<Hotel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  
+  const { getMinPrice, getOriginalPrice } = useHotelPrice();
+  
+  // 本地状态
+  const [quickTags, setQuickTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(facilitiesFilter);
+  const [sortBy, setSortBy] = useState('popular');
+  
   // 弹窗状态
   const [showCityModal, setShowCityModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [showKeywordModal, setShowKeywordModal] = useState(false);
   const [tempCity, setTempCity] = useState(city);
-  const [tempCheckIn, setTempCheckIn] = useState(checkIn);
-  const [tempCheckOut, setTempCheckOut] = useState(checkOut);
+  const [tempCheckIn, setTempCheckIn] = useState<Dayjs>(checkIn);
+  const [tempCheckOut, setTempCheckOut] = useState<Dayjs>(checkOut);
   const [tempKeyword, setTempKeyword] = useState(keyword);
 
-  const hasMore = list.length < total;
-  const containerRef = useRef<HTMLDivElement>(null);
-  const loadingPageRef = useRef<number | null>(null); // 跟踪正在加载的页码,防止重复加载
+  // 判断是否有前端筛选
+  const hasFacilityFilter = facilitiesFilter.length > 0;
+  
+  // 判断是否还有更多数据
+  const hasMore = hasFacilityFilter 
+    ? page * 10 < total
+    : list.length < total;
 
-  // Parse price range once
-  const { minPrice, maxPrice } = parsePriceRange(priceRange);
-
-  // 辅助函数：获取酒店最低价格
-  const getMinPrice = useCallback((hotel: Hotel) => {
-    const prices = hotel.roomTypes?.map((r: any) => Number(r?.price)).filter((n: number) => !Number.isNaN(n) && n > 0) || [];
-    return prices.length ? Math.min(...prices) : 999999;
-  }, []);
-
-  // 辅助函数：获取酒店原价
-  const getOriginalPrice = useCallback((hotel: Hotel) => {
-    const prices = hotel.roomTypes?.map((r: any) => Number(r?.originalPrice)).filter((n: number) => !Number.isNaN(n) && n > 0) || [];
-    return prices.length ? Math.min(...prices) : 0;
-  }, []);
-
+  // 加载数据
   const loadPage = useCallback(
     async (pageNum: number, append: boolean) => {
-      // 防止重复加载同一页
-      if (loadingPageRef.current === pageNum) {
-        console.log(`页码 ${pageNum} 正在加载中,跳过重复请求`);
-        return;
+      // 防止重复加载
+      if (pageNum === 1) {
+        if (loading) return;
+        setLoading(true);
+      } else {
+        if (loadingMore) return;
+        setLoadingMore(true);
       }
-      
-      loadingPageRef.current = pageNum; // 标记正在加载
-      
-      if (pageNum === 1) setLoading(true);
-      else setLoadingMore(true);
       setLoadError(null);
+      
       try {
-        const params: any = { page: pageNum, pageSize: PAGE_SIZE };
-        if (keyword.trim()) params.keyword = keyword.trim();
-        if (city.trim()) params.city = city.trim();
-        if (starRating > 0) params.starRating = starRating;
-        if (minPrice !== undefined) params.minPrice = minPrice;
-        if (maxPrice !== undefined) params.maxPrice = maxPrice;
-        const res = await publicHotelApi.getList(params);
+        const requestParams: any = { page: pageNum, pageSize: 10 };
+        if (keyword.trim()) requestParams.keyword = keyword.trim();
+        if (city.trim()) requestParams.city = city.trim();
+        if (starRating > 0) requestParams.starRating = starRating;
+        if (minPrice !== undefined) requestParams.minPrice = minPrice;
+        if (maxPrice !== undefined) requestParams.maxPrice = maxPrice;
+        
+        const res = await publicHotelApi.getList(requestParams);
         let filteredData = res.data || [];
         
         // 前端根据设施筛选
-        if (facilitiesFilter.length > 0) {
+        if (hasFacilityFilter) {
           filteredData = filteredData.filter((hotel) => {
             return facilitiesFilter.every((facility) => 
               hotel.facilities?.includes(facility)
@@ -125,22 +105,22 @@ const HotelList: React.FC = () => {
         }
         
         if (append) {
+          // 追加数据时去重
           setList((prev) => {
-            console.log(`追加数据: 原有${prev.length}条, 新增${filteredData.length}条`);
-            return [...prev, ...filteredData];
+            const existingIds = new Set(prev.map(h => h.id));
+            const newData = filteredData.filter(h => !existingIds.has(h.id));
+            return [...prev, ...newData];
           });
         } else {
           setList(filteredData);
-          // 从酒店数据中提取常见设施作为快捷标签
-          extractQuickTags(filteredData);
+          setTotal(res.total || 0);
         }
-        setTotal(facilitiesFilter.length > 0 ? filteredData.length : (res.total || 0));
+        
         setPage(pageNum);
       } catch (e) {
-        const msg = (e as any)?.message || '加载失败，请检查网络或稍后重试';
+        const msg = (e as any)?.message || '加载失败';
         if (append) {
           message.error(msg);
-          setList((prev) => prev);
         } else {
           setList([]);
           setLoadError(msg);
@@ -148,27 +128,37 @@ const HotelList: React.FC = () => {
       } finally {
         setLoading(false);
         setLoadingMore(false);
-        loadingPageRef.current = null; // 清除加载标记
       }
     },
-    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')],
   );
 
-  // 从酒店列表中提取常见设施作为快捷标签
-  const extractQuickTags = (hotels: Hotel[]) => {
-    const facilityCount: Record<string, number> = {};
-    hotels.forEach((hotel) => {
-      hotel.facilities?.forEach((facility) => {
-        facilityCount[facility] = (facilityCount[facility] || 0) + 1;
-      });
-    });
-    // 按出现频率排序，取前5个
-    const sortedTags = Object.entries(facilityCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([tag]) => tag);
-    setQuickTags(sortedTags);
-  };
+  // 初始加载
+  useEffect(() => {
+    loadPage(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')]);
+
+  // 加载更多
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      loadPage(page + 1, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, hasMore, loadingMore]);
+
+  // 重新加载
+  const reload = useCallback(() => {
+    loadPage(1, false);
+  }, [loadPage]);
+
+  // 提取快捷标签
+  React.useEffect(() => {
+    if (list.length > 0) {
+      setQuickTags(extractQuickTags(list, 5));
+    }
+  }, [list]);
 
   // 排序处理
   const handleSort = (sortKey: string) => {
@@ -178,41 +168,19 @@ const HotelList: React.FC = () => {
       return;
     }
     
-    // 对当前列表进行排序
-    const sorted = [...list].sort((a, b) => {
-      if (sortKey === 'price') {
-        const priceA = getMinPrice(a);
-        const priceB = getMinPrice(b);
-        console.log(`排序: ${a.nameCn} (¥${priceA}) vs ${b.nameCn} (¥${priceB})`);
-        // 价格从低到高排序
-        return priceA - priceB;
-      }
-      if (sortKey === 'distance') {
-        // 位置距离排序（按 ID 降序，模拟距离远近）
-        // ID 越大表示距离越近
-        return b.id - a.id;
-      }
-      // popular - 欢迎度排序（按 ID 升序）
-      // ID 越小表示越受欢迎
-      return a.id - b.id;
-    });
-    
-    console.log('排序后列表:', sorted.map(h => `${h.nameCn}: ¥${getMinPrice(h)}`));
-    setList(sorted);
+    // 这里可以调用后端排序接口，暂时使用前端排序
+    message.info(`按${SORT_OPTIONS.find(o => o.key === sortKey)?.label}排序`);
   };
 
-  // 快捷标签点击处理
+  // 快捷标签点击
   const handleTagClick = (tag: string) => {
     const isSelected = selectedTags.includes(tag);
-    let newSelectedTags: string[];
-    if (isSelected) {
-      newSelectedTags = selectedTags.filter((t) => t !== tag);
-    } else {
-      newSelectedTags = [...selectedTags, tag];
-    }
+    const newSelectedTags = isSelected
+      ? selectedTags.filter((t) => t !== tag)
+      : [...selectedTags, tag];
+    
     setSelectedTags(newSelectedTags);
     
-    // 更新URL参数并重新加载
     const params = new URLSearchParams(searchParams.toString());
     if (newSelectedTags.length > 0) {
       params.set('facilities', newSelectedTags.join(','));
@@ -220,57 +188,22 @@ const HotelList: React.FC = () => {
       params.delete('facilities');
     }
     navigate(`/hotels?${params.toString()}`, { replace: true });
-    
-    // 重新加载数据
     window.location.reload();
   };
 
-  useEffect(() => {
-    loadPage(1, false);
-  }, [loadPage]);
+  // 渲染单个酒店卡片
+  const renderHotelCard = useCallback((hotel: any) => {
+    return (
+      <HotelCard
+        hotel={hotel}
+        searchParams={searchParams.toString()}
+        getMinPrice={getMinPrice}
+        getOriginalPrice={getOriginalPrice}
+      />
+    );
+  }, [searchParams, getMinPrice, getOriginalPrice]);
 
-  const handleScroll = useCallback(() => {
-    const el = containerRef.current;
-    if (!el || loadingMore || !hasMore || list.length === 0) return;
-    const { scrollTop, scrollHeight, clientHeight } = el;
-    if (scrollTop + clientHeight >= scrollHeight - 80) loadPage(page + 1, true);
-  }, [page, hasMore, loadingMore, list.length, loadPage]);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
-
-  const getTags = (hotel: Hotel) => {
-    const tags: string[] = [];
-    if (hotel.facilities?.length) tags.push(...hotel.facilities.slice(0, 4));
-    if (tags.length === 0) tags.push('免费WiFi', '免费停车', '含早');
-    return tags.slice(0, 4);
-  };
-
-  const getScore = (hotel: Hotel) => {
-    const s = (hotel.id % 31) / 10 + 4.3;
-    return Math.min(5, Math.round(s * 10) / 10);
-  };
-
-  const getNearbyText = (hotel: Hotel) => {
-    const att = hotel.nearbyAttractions?.slice(0, 2).join('·') || hotel.address?.slice(0, 12) || '交通便利';
-    return att.length > 20 ? att.slice(0, 20) + '…' : att;
-  };
-
-  const goToMap = () => {
-    navigate(`/hotels?${searchParams.toString()}&map=1`);
-    // 若后续有地图页可跳转
-  };
-
-  // 城市选择
-  const POPULAR_CITIES = [
-    '北京', '上海', '广州', '深圳', '杭州', '成都', '西安', '三亚',
-    '南京', '武汉', '厦门', '青岛', '重庆', '苏州', '长沙', '昆明',
-  ];
-
+  // 城市选择确认
   const handleCityConfirm = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('city', tempCity);
@@ -279,17 +212,17 @@ const HotelList: React.FC = () => {
     window.location.reload();
   };
 
-  // 日期选择
+  // 日期选择确认
   const handleDateConfirm = () => {
     const params = new URLSearchParams(searchParams.toString());
-    if (tempCheckIn) params.set('checkIn', tempCheckIn.format('YYYY-MM-DD'));
-    if (tempCheckOut) params.set('checkOut', tempCheckOut.format('YYYY-MM-DD'));
+    params.set('checkIn', tempCheckIn.format('YYYY-MM-DD'));
+    params.set('checkOut', tempCheckOut.format('YYYY-MM-DD'));
     navigate(`/hotels?${params.toString()}`);
     setShowDateModal(false);
     window.location.reload();
   };
 
-  // 关键词搜索
+  // 关键词搜索确认
   const handleKeywordConfirm = () => {
     const params = new URLSearchParams(searchParams.toString());
     if (tempKeyword.trim()) {
@@ -303,8 +236,8 @@ const HotelList: React.FC = () => {
   };
 
   return (
-    <div className="ctrip-list" ref={containerRef}>
-      {/* Consolidated Header */}
+    <div className="ctrip-list ctrip-list-virtual">
+      {/* Header */}
       <header className="ctrip-list-header-complex">
         <Button type="text" icon={<LeftOutlined />} onClick={() => navigate('/')} className="ctrip-back-btn" />
         <div className="ctrip-list-search-box">
@@ -317,12 +250,13 @@ const HotelList: React.FC = () => {
             {keyword || '位置/品牌/酒店'}
           </div>
         </div>
-        <div className="ctrip-list-map-icon" onClick={goToMap}>
+        <div className="ctrip-list-map-icon" onClick={() => message.info('地图功能开发中')}>
           <EnvironmentOutlined />
           <span className="map-text">地图</span>
         </div>
       </header>
 
+      {/* Filters */}
       <div className="ctrip-list-filters">
         {SORT_OPTIONS.map((opt) => (
           <span
@@ -335,12 +269,16 @@ const HotelList: React.FC = () => {
         ))}
       </div>
       
-      {/* 显示酒店数量 */}
-      {!loading && !loadError && total > 0 && (
+      {/* Count */}
+      {!loading && !loadError && (list.length > 0 || total > 0) && (
         <div className="ctrip-list-count">
-          共找到 <span className="count-num">{total}</span> 家酒店
+          共找到 <span className="count-num">{hasFacilityFilter ? list.length : total}</span> 家酒店
+          {hasFacilityFilter && <span style={{ fontSize: '12px', color: '#999', marginLeft: '4px' }}>(已筛选)</span>}
+          <span className="virtual-badge">虚拟列表·重构版</span>
         </div>
       )}
+      
+      {/* Quick Tags */}
       <div className="ctrip-list-quick-tags">
         {quickTags.map((tag) => (
           <span
@@ -353,7 +291,8 @@ const HotelList: React.FC = () => {
         ))}
       </div>
 
-      <div className="ctrip-list-content">
+      {/* Content */}
+      <div className="ctrip-list-content-virtual">
         {loading ? (
           <div className="ctrip-list-loading">
             <Spin size="large" />
@@ -361,171 +300,59 @@ const HotelList: React.FC = () => {
         ) : loadError ? (
           <div className="ctrip-empty">
             <div className="ctrip-empty-msg">{loadError}</div>
-            <div className="ctrip-empty-hint">请确认已启动后端：cd hotel-management/backend && npm run start:dev</div>
-            <Button type="primary" onClick={() => loadPage(1, false)} style={{ marginTop: 12 }}>
+            <Button type="primary" onClick={reload} style={{ marginTop: 12 }}>
               重试
             </Button>
           </div>
         ) : list.length === 0 ? (
           <Empty description="暂无酒店" className="ctrip-empty" />
         ) : (
-          <>
-            {list.map((hotel) => {
-              const minPrice = getMinPrice(hotel);
-              const originalPrice = getOriginalPrice(hotel);
-              const tags = getTags(hotel);
-              const score = getScore(hotel);
-              const { reviews, favorites } = getReviewStats(hotel);
-              const nearbyText = getNearbyText(hotel);
-              return (
-                <div
-                  key={hotel.id}
-                  className="ctrip-list-card"
-                  onClick={() => navigate(`/hotels/${hotel.id}?${searchParams.toString()}`)}
-                >
-                  <div className="ctrip-list-card-cover">
-                    {hotel.images?.[0]?.imageUrl ? (
-                      <img src={hotel.images[0].imageUrl} alt={hotel.nameCn} />
-                    ) : (
-                      <div className="ctrip-list-card-placeholder" />
-                    )}
-                    <div className="ctrip-video-icon">
-                      <span className="video-triangle">▶</span>
-                    </div>
-                  </div>
-                  <div className="ctrip-list-card-body">
-                    <div className="ctrip-list-card-name-row">
-                      <span className="ctrip-list-card-name">{hotel.nameCn}</span>
-                      {hotel.starRating >= 5 && <span className="ctrip-card-star">💎💎💎💎💎</span>}
-                    </div>
-
-                    <div className="ctrip-list-card-score-row">
-                      <div className="ctrip-score-box">
-                        <span className="score-num">{score}</span>
-                        <span className="score-label">{getRatingLabel(score)}</span>
-                      </div>
-                      <span className="ctrip-score-text">{reviews}点评 · {favorites}收藏</span>
-                    </div>
-
-                    <div className="ctrip-list-card-nearby">
-                      {nearbyText}
-                    </div>
-
-                    <div className="ctrip-list-card-tags">
-                      {tags.slice(0, 3).map((t) => (
-                        <span key={t} className="ctrip-list-tag">{t}</span>
-                      ))}
-                    </div>
-
-                    <div className="ctrip-list-card-price-row">
-                      <div className="ctrip-price-block">
-                        <div className="price-top">
-                          <span className="currency">¥</span>
-                          <span className="price-val">{minPrice}</span>
-                          <span className="price-up">起</span>
-                        </div>
-                        {originalPrice > minPrice && (
-                          <div className="price-bottom">
-                            <span className="price-diamond">钻石贵宾价</span>
-                            <span className="price-del">¥{originalPrice}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {loadingMore && (
-              <div className="ctrip-list-more">
-                <Spin />
-              </div>
-            )}
-            {!loadingMore && hasMore && list.length > 0 && (
-              <div className="ctrip-list-more-hint">上滑加载更多</div>
-            )}
-          </>
+          <VirtualList
+            data={list}
+            itemHeight={ITEM_HEIGHT}
+            containerHeight={window.innerHeight - 200}
+            bufferCount={BUFFER_COUNT}
+            renderItem={renderHotelCard}
+            getItemKey={(hotel) => hotel.id}
+            onLoadMore={loadMore}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
+            loadMoreOffset={LOAD_MORE_OFFSET}
+            className="hotel-virtual-list"
+            showDebug={false}
+          />
         )}
       </div>
 
-      {/* 城市选择弹窗 */}
-      <Modal
-        title="选择城市"
+      {/* Modals */}
+      {/* 城市选择模态框 */}
+      <CitySelectionModal
         open={showCityModal}
+        currentCity={tempCity}
+        cities={POPULAR_CITIES}
+        onCitySelect={(city) => {
+          setTempCity(city);
+          handleCityConfirm();
+        }}
         onCancel={() => setShowCityModal(false)}
-        onOk={handleCityConfirm}
-        okText="确定"
-        cancelText="取消"
-        centered
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', padding: '12px 0' }}>
-          {POPULAR_CITIES.map((c) => (
-            <div
-              key={c}
-              onClick={() => setTempCity(c)}
-              style={{
-                padding: '8px',
-                textAlign: 'center',
-                background: tempCity === c ? '#e6f4ff' : '#f5f5f5',
-                color: tempCity === c ? '#0086f6' : '#333',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: tempCity === c ? 600 : 400,
-              }}
-            >
-              {c}
-            </div>
-          ))}
-        </div>
-      </Modal>
+      />
 
-      {/* 日期选择弹窗 */}
-      <Modal
-        title="选择入住和离店日期"
+      {/* 日期选择模态框 */}
+      <DateSelectionModal
         open={showDateModal}
+        checkIn={tempCheckIn}
+        checkOut={tempCheckOut}
+        onCheckInChange={(date) => {
+          setTempCheckIn(date);
+          if (!tempCheckOut.isAfter(date, 'day')) {
+            setTempCheckOut(date.add(1, 'day'));
+          }
+        }}
+        onCheckOutChange={(date) => setTempCheckOut(date)}
         onCancel={() => setShowDateModal(false)}
-        onOk={handleDateConfirm}
-        okText="确定"
-        cancelText="取消"
-        centered
-        width={400}
-      >
-        <div style={{ padding: '12px 0' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>入住日期</div>
-            <DatePicker
-              value={tempCheckIn}
-              onChange={(date) => {
-                if (date) {
-                  setTempCheckIn(date);
-                  if (!tempCheckOut || !tempCheckOut.isAfter(date, 'day')) {
-                    setTempCheckOut(date.add(1, 'day'));
-                  }
-                }
-              }}
-              disabledDate={(current) => current < dayjs().startOf('day')}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </div>
-          <div>
-            <div style={{ marginBottom: '8px', fontSize: '14px', color: '#666' }}>离店日期</div>
-            <DatePicker
-              value={tempCheckOut}
-              onChange={(date) => date && setTempCheckOut(date)}
-              disabledDate={(current) => !!tempCheckIn && current <= tempCheckIn}
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </div>
-          <div style={{ marginTop: '12px', fontSize: '14px', color: '#0086f6', textAlign: 'center' }}>
-            共 {tempCheckIn && tempCheckOut ? Math.max(1, tempCheckOut.diff(tempCheckIn, 'day')) : 0} 晚
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDateConfirm}
+      />
 
-      {/* 关键词搜索弹窗 */}
       <Modal
         title="搜索酒店"
         open={showKeywordModal}
