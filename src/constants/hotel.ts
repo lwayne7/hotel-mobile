@@ -2,12 +2,12 @@
  * 酒店相关常量
  */
 
-// 排序选项
+// 排序选项（与后端 sortBy 参数对应）
 export const SORT_OPTIONS = [
-  { key: 'popular', label: '欢迎度排序' },
-  { key: 'distance', label: '位置距离' },
-  { key: 'price', label: '价格/星级' },
-  { key: 'filter', label: '筛选' },
+  { key: 'popular', label: '欢迎度排序' }, // 后端：按星级和更新时间排序
+  { key: 'distance', label: '位置距离' },  // 后端：按更新时间排序（模拟距离）
+  { key: 'price', label: '价格/星级' },    // 后端：按房型价格排序
+  { key: 'filter', label: '筛选' },        // 前端：打开筛选面板
 ] as const;
 
 // 热门城市列表

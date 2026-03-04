@@ -16,8 +16,15 @@ import './index.css';
 const { ITEM_HEIGHT, BUFFER_COUNT, LOAD_MORE_OFFSET } = VIRTUAL_LIST_CONFIG;
 
 /**
- * 酒店列表页面（虚拟列表版本）
- * 使用虚拟列表优化大数据渲染性能
+ * 酒店列表页面
+ * 
+ * 功能特性：
+ * 1. 虚拟列表优化大数据渲染性能
+ * 2. 完全依赖后端 API 进行筛选、排序和分页
+ * 3. 支持关键词搜索、城市筛选、星级筛选、价格区间筛选
+ * 4. 支持设施快捷标签筛选
+ * 5. 支持三种排序：欢迎度、位置距离、价格
+ * 6. 无限滚动加载更多数据
  */
 const HotelList: React.FC = () => {
   const navigate = useNavigate();
@@ -81,44 +88,41 @@ const HotelList: React.FC = () => {
       setLoadError(null);
       
       try {
-        const requestParams: any = { page: pageNum, pageSize: 10 };
-        if (keyword.trim()) requestParams.keyword = keyword.trim();
-        if (city.trim()) requestParams.city = city.trim();
-        if (starRating > 0) requestParams.starRating = starRating;
-        if (minPrice !== undefined) requestParams.minPrice = minPrice;
-        if (maxPrice !== undefined) requestParams.maxPrice = maxPrice;
+        // 构建请求参数，完全依赖后端能力
+        const params: any = { 
+          page: pageNum, 
+          pageSize: 10 
+        };
         
-        // 使用后端排序
+        // 基础筛选参数
+        if (keyword.trim()) params.keyword = keyword.trim();
+        if (city.trim()) params.city = city.trim();
+        if (starRating > 0) params.starRating = starRating;
+        if (minPrice !== undefined) params.minPrice = minPrice;
+        if (maxPrice !== undefined) params.maxPrice = maxPrice;
+        
+        // 排序参数（后端支持：price, popular, smart, distance）
         if (sortBy && sortBy !== 'popular') {
-          requestParams.sortBy = sortBy;
+          params.sortBy = sortBy;
         }
         
-        // 使用后端设施筛选（逗号分隔）
+        // 设施筛选（逗号分隔）
         if (facilitiesFilter.length > 0) {
-          requestParams.facilities = facilitiesFilter.join(',');
+          params.facilities = facilitiesFilter.join(',');
         }
         
-        const res = await publicHotelApi.getList(requestParams);
-        let filteredData = res.data || [];
-        
-        // 如果是价格排序，前端再次按最低价格排序（修正后端按房型价格排序的问题）
-        if (sortBy === 'price' && filteredData.length > 0) {
-          filteredData = [...filteredData].sort((a, b) => {
-            const priceA = getMinPrice(a);
-            const priceB = getMinPrice(b);
-            return priceA - priceB;
-          });
-        }
+        const res = await publicHotelApi.getList(params);
+        const data = res.data || [];
         
         if (append) {
           // 追加数据时去重
           setList((prev) => {
             const existingIds = new Set(prev.map(h => h.id));
-            const newData = filteredData.filter(h => !existingIds.has(h.id));
+            const newData = data.filter(h => !existingIds.has(h.id));
             return [...prev, ...newData];
           });
         } else {
-          setList(filteredData);
+          setList(data);
           setTotal(res.total || 0);
         }
         
