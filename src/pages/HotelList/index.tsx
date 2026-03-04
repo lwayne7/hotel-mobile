@@ -162,14 +162,46 @@ const HotelList: React.FC = () => {
 
   // 排序处理
   const handleSort = (sortKey: string) => {
-    setSortBy(sortKey);
     if (sortKey === 'filter') {
       message.info('筛选功能开发中');
       return;
     }
     
-    // 这里可以调用后端排序接口，暂时使用前端排序
-    message.info(`按${SORT_OPTIONS.find(o => o.key === sortKey)?.label}排序`);
+    setSortBy(sortKey);
+    
+    // 对当前列表进行排序
+    const sortedList = [...list];
+    
+    switch (sortKey) {
+      case 'popular':
+        // 按欢迎度排序（默认，按 ID 倒序）
+        sortedList.sort((a, b) => b.id - a.id);
+        break;
+        
+      case 'distance':
+        // 按位置距离排序（暂时按地址长度模拟）
+        sortedList.sort((a, b) => {
+          const lenA = a.address?.length || 0;
+          const lenB = b.address?.length || 0;
+          return lenA - lenB;
+        });
+        break;
+        
+      case 'price':
+        // 按价格排序（从低到高）
+        sortedList.sort((a, b) => {
+          const priceA = getMinPrice(a);
+          const priceB = getMinPrice(b);
+          return priceA - priceB;
+        });
+        break;
+        
+      default:
+        break;
+    }
+    
+    setList(sortedList);
+    message.success(`已按${SORT_OPTIONS.find(o => o.key === sortKey)?.label}排序`);
   };
 
   // 快捷标签点击
