@@ -44,16 +44,35 @@ export interface Hotel {
   images?: any[];
 }
 
+/** 公共酒店列表查询参数 */
+export interface PublicHotelListParams {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  city?: string;
+  starRating?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;
+  accommodationType?: string; // 住宿类型筛选，逗号分隔
+  facilities?: string; // 设施筛选，逗号分隔
+  brands?: string; // 品牌筛选，逗号分隔
+  hotelFeatures?: string; // 酒店特色，逗号分隔
+  roomFeatures?: string; // 房间特色，逗号分隔
+  tags?: string; // 热门标签筛选，逗号分隔
+}
+
+/** 公共酒店列表响应 */
+export interface PublicHotelListResult {
+  data: Hotel[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export const publicHotelApi = {
-  getList: (params?: {
-    page?: number;
-    pageSize?: number;
-    keyword?: string;
-    city?: string;
-    starRating?: number;
-    minPrice?: number;
-    maxPrice?: number;
-  }): Promise<{ data: Hotel[]; page: number; pageSize: number; total: number; totalPages: number }> =>
+  getList: (params?: PublicHotelListParams): Promise<PublicHotelListResult> =>
     api.get('/public/hotels', { params }).then((r) => r.data),
   getById: (id: number): Promise<Hotel> => api.get(`/public/hotels/${id}`).then((r) => r.data),
 };
