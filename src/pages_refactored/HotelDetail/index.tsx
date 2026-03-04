@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Button, Rate, Spin, Carousel } from 'antd';
+import { Button, Rate, Spin, Carousel, message } from 'antd';
 import {
   LeftOutlined,
   HeartOutlined,
@@ -8,7 +8,8 @@ import {
   SoundOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useHotelDetail, useDateSelection } from '../../hooks';
+import { useDateSelection } from '../../hooks';
+import { publicHotelApi, Hotel } from '../../services/api';
 import DateSelectionModal from '../../components/DateSelectionModal';
 import dayjs from 'dayjs';
 import './index.css';
@@ -20,8 +21,9 @@ const HotelDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   
-  // 使用酒店详情 Hook
-  const { hotel, loading, loadError } = useHotelDetail(id);
+  // 酒店数据状态
+  const [hotel, setHotel] = useState<Hotel | null>(null);
+  const [loading, setLoading] = useState(true);
   
   // 使用日期选择 Hook
   const {
@@ -46,6 +48,23 @@ const HotelDetail: React.FC = () => {
   const [showDateModal, setShowDateModal] = useState(false);
   const [tempCheckIn, setTempCheckIn] = useState(checkIn);
   const [tempCheckOut, setTempCheckOut] = useState(checkOut);
+
+  // 加载酒店数据
+  useEffect(() => {
+    if (!id) return;
+    
+    setLoading(true);
+    publicHotelApi
+      .getById(Number(id))
+      .then((data) => {
+        setHotel(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        message.error(error?.message || '加载酒店详情失败');
+        setLoading(false);
+      });
+  }, [id]);
 
   // 日期选择确认处理
   const handleDateConfirm = () => {
@@ -98,7 +117,7 @@ const HotelDetail: React.FC = () => {
           返回列表
         </Button>
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--ctrip-text-secondary)' }}>
-          {loadError || '酒店不存在或未发布'}
+          酒店不存在或未发布
         </div>
       </div>
     );
