@@ -53,6 +53,7 @@ const HotelList: React.FC = () => {
   const [quickTags, setQuickTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>(facilitiesFilter);
   const [sortBy, setSortBy] = useState('popular');
+  const [scrollResetTrigger, setScrollResetTrigger] = useState(0); // 滚动重置触发器
   
   // 弹窗状态
   const [showCityModal, setShowCityModal] = useState(false);
@@ -167,9 +168,6 @@ const HotelList: React.FC = () => {
       return;
     }
     
-    // 先滚动到顶部（无论是否切换排序）
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
     setSortBy(sortKey);
     
     // 对当前列表进行排序
@@ -200,6 +198,9 @@ const HotelList: React.FC = () => {
     }
     
     setList(sortedList);
+    
+    // 触发虚拟列表滚动重置
+    setScrollResetTrigger(prev => prev + 1);
     
     message.success(`已按${SORT_OPTIONS.find(o => o.key === sortKey)?.label}排序`, 0.5);
   };
@@ -351,6 +352,7 @@ const HotelList: React.FC = () => {
             loadMoreOffset={LOAD_MORE_OFFSET}
             className="hotel-virtual-list"
             showDebug={false}
+            resetScrollTrigger={scrollResetTrigger}
           />
         )}
       </div>

@@ -14,6 +14,7 @@ interface VirtualListProps<T> {
   loadMoreOffset?: number;
   className?: string;
   showDebug?: boolean; // 是否显示调试信息
+  resetScrollTrigger?: number; // 重置滚动触发器（变化时重置滚动）
 }
 
 /**
@@ -30,6 +31,7 @@ interface VirtualListProps<T> {
  * @param loadMoreOffset 触发加载更多的距离阈值
  * @param className 自定义类名
  * @param showDebug 是否显示调试信息（开发环境使用）
+ * @param resetScrollTrigger 重置滚动触发器（变化时重置滚动）
  */
 function VirtualList<T>({
   data,
@@ -44,6 +46,7 @@ function VirtualList<T>({
   loadMoreOffset = 100,
   className = '',
   showDebug = false,
+  resetScrollTrigger,
 }: VirtualListProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -96,6 +99,14 @@ function VirtualList<T>({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // 监听重置滚动触发器
+  useEffect(() => {
+    if (resetScrollTrigger !== undefined && containerRef.current) {
+      containerRef.current.scrollTop = 0;
+      setScrollTop(0);
+    }
+  }, [resetScrollTrigger]);
 
   return (
     <>
