@@ -201,6 +201,10 @@ const HotelList: React.FC = () => {
     }
     
     setList(sortedList);
+    
+    // 排序后滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     message.success(`已按${SORT_OPTIONS.find(o => o.key === sortKey)?.label}排序`);
   };
 
