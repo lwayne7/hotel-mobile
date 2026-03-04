@@ -19,6 +19,7 @@ export const useCitySelection = (options: UseCitySelectionOptions = {}) => {
   } = options;
 
   const [city, setCity] = useState(initialCity);
+  const [hasLocated, setHasLocated] = useState(false); // 标记是否已经定位过
   
   // 使用精准城市定位 Hook
   const { 
@@ -37,23 +38,26 @@ export const useCitySelection = (options: UseCitySelectionOptions = {}) => {
   // GPS 定位
   const handleGpsLocation = useCallback(() => {
     if (gpsLoading) return;
+    setHasLocated(true); // 标记开始定位
     locate();
   }, [gpsLoading, locate]);
 
-  // 监听定位结果
+  // 监听定位结果（只在用户主动定位时显示提示）
   useEffect(() => {
-    if (locatedCity && !gpsLoading && !locationError) {
+    if (hasLocated && locatedCity && !gpsLoading && !locationError) {
       handleCityChange(locatedCity);
       message.success(`已定位到: ${locatedCity}`);
+      setHasLocated(false); // 重置标记
     }
-  }, [locatedCity, gpsLoading, locationError, handleCityChange]);
+  }, [locatedCity, gpsLoading, locationError, handleCityChange, hasLocated]);
 
-  // 监听定位错误
+  // 监听定位错误（只在用户主动定位时显示提示）
   useEffect(() => {
-    if (locationError) {
+    if (hasLocated && locationError) {
       message.error(locationError);
+      setHasLocated(false); // 重置标记
     }
-  }, [locationError]);
+  }, [locationError, hasLocated]);
 
   return {
     city,
