@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button, Spin, Empty, message, Modal, Input } from 'antd';
 import { LeftOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -7,7 +7,8 @@ import VirtualList from '../../components/VirtualList';
 import HotelCard from '../../components/HotelCard';
 import DateSelectionModal from '../../components/DateSelectionModal';
 import CitySelectionModal from '../../components/CitySelectionModal';
-import { useHotelList, useHotelPrice } from '../../hooks';
+import { useHotelPrice } from '../../hooks';
+import { publicHotelApi, Hotel } from '../../services/api';
 import { parsePriceRange, extractQuickTags } from '../../utils';
 import { SORT_OPTIONS, POPULAR_CITIES, VIRTUAL_LIST_CONFIG } from '../../constants';
 import './index.css';
@@ -16,7 +17,7 @@ const { ITEM_HEIGHT, BUFFER_COUNT, LOAD_MORE_OFFSET } = VIRTUAL_LIST_CONFIG;
 
 /**
  * 虚拟列表版本的酒店列表页面（重构版）
- * 使用抽取的通用逻辑和组件
+ * 使用抽取的通用组件，直接处理数据加载逻辑
  */
 const VirtualHotelListRefactored: React.FC = () => {
   const navigate = useNavigate();
@@ -38,25 +39,13 @@ const VirtualHotelListRefactored: React.FC = () => {
   // 解析价格区间
   const { minPrice, maxPrice } = parsePriceRange(priceRange);
   
-  // 使用自定义 Hooks
-  const {
-    list,
-    loading,
-    loadingMore,
-    loadError,
-    total,
-    hasMore,
-    hasFacilityFilter,
-    loadMore,
-    reload,
-  } = useHotelList({
-    keyword,
-    city,
-    starRating,
-    minPrice,
-    maxPrice,
-    facilitiesFilter,
-  });
+  // 数据状态
+  const [list, setList] = useState<Hotel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   
   const { getMinPrice, getOriginalPrice } = useHotelPrice();
   
@@ -73,6 +62,96 @@ const VirtualHotelListRefactored: React.FC = () => {
   const [tempCheckIn, setTempCheckIn] = useState<Dayjs>(checkIn);
   const [tempCheckOut, setTempCheckOut] = useState<Dayjs>(checkOut);
   const [tempKeyword, setTempKeyword] = useState(keyword);
+
+  // 判断是否有前端筛选
+  const hasFacilityFilter = facilitiesFilter.length > 0;
+  
+  // 判断是否还有更多数据
+  const hasMore = hasFacilityFilter 
+    ? page * 10 < total
+    : list.length < total;
+
+  // 加载数据
+  const loadPage = useCallback(
+    async (pageNum: number, append: boolean) => {
+      // 防止重复加载
+      if (pageNum === 1) {
+        if (loading) return;
+        setLoading(true);
+      } else {
+        if (loadingMore) return;
+        setLoadingMore(true);
+      }
+      setLoadError(null);
+      
+      try {
+        const requestParams: any = { page: pageNum, pageSize: 10 };
+        if (keyword.trim()) requestParams.keyword = keyword.trim();
+        if (city.trim()) requestParams.city = city.trim();
+        if (starRating > 0) requestParams.starRating = starRating;
+        if (minPrice !== undefined) requestParams.minPrice = minPrice;
+        if (maxPrice !== undefined) requestParams.maxPrice = maxPrice;
+        
+        const res = await publicHotelApi.getList(requestParams);
+        let filteredData = res.data || [];
+        
+        // 前端根据设施筛选
+        if (hasFacilityFilter) {
+          filteredData = filteredData.filter((hotel) => {
+            return facilitiesFilter.every((facility) => 
+              hotel.facilities?.includes(facility)
+            );
+          });
+        }
+        
+        if (append) {
+          // 追加数据时去重
+          setList((prev) => {
+            const existingIds = new Set(prev.map(h => h.id));
+            const newData = filteredData.filter(h => !existingIds.has(h.id));
+            return [...prev, ...newData];
+          });
+        } else {
+          setList(filteredData);
+          setTotal(res.total || 0);
+        }
+        
+        setPage(pageNum);
+      } catch (e) {
+        const msg = (e as any)?.message || '加载失败';
+        if (append) {
+          message.error(msg);
+        } else {
+          setList([]);
+          setLoadError(msg);
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')],
+  );
+
+  // 初始加载
+  useEffect(() => {
+    loadPage(1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, city, starRating, minPrice, maxPrice, facilitiesFilter.join(',')]);
+
+  // 加载更多
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      loadPage(page + 1, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, hasMore, loadingMore]);
+
+  // 重新加载
+  const reload = useCallback(() => {
+    loadPage(1, false);
+  }, [loadPage]);
 
   // 提取快捷标签
   React.useEffect(() => {
