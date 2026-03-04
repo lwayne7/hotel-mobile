@@ -119,19 +119,7 @@ const HotelList: React.FC = () => {
           setList((prev) => {
             const existingIds = new Set(prev.map(h => h.id));
             const newData = data.filter(h => !existingIds.has(h.id));
-            let combined = [...prev, ...newData];
-            
-            // 如果是价格排序，追加后需要重新排序整个列表
-            // 原因：后端分页返回的数据在各自页内是有序的，但跨页可能无序
-            if (sortBy === 'price' && combined.length > 0) {
-              combined = combined.sort((a, b) => {
-                const priceA = getMinPrice(a);
-                const priceB = getMinPrice(b);
-                return priceA - priceB;
-              });
-            }
-            
-            return combined;
+            return [...prev, ...newData];
           });
         } else {
           setList(data);
