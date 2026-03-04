@@ -7,7 +7,7 @@ import VirtualList from '../../components/VirtualList';
 import HotelCard from '../../components/HotelCard';
 import DateSelectionModal from '../../components/DateSelectionModal';
 import CitySelectionModal from '../../components/CitySelectionModal';
-import { useHotelPrice } from '../../hooks';
+import { useHotelPrice, usePriceUpdates } from '../../hooks';
 import { publicHotelApi, Hotel } from '../../services/api';
 import { parsePriceRange, extractQuickTags } from '../../utils';
 import { SORT_OPTIONS, POPULAR_CITIES, VIRTUAL_LIST_CONFIG } from '../../constants';
@@ -162,6 +162,47 @@ const HotelList: React.FC = () => {
   const reload = useCallback(() => {
     loadPage(1, false);
   }, [loadPage]);
+
+  // SSE 实时价格更新
+  usePriceUpdates(
+    useCallback((event) => {
+      // 根据事件类型处理
+      if (event.changeKind === 'price_changed' && event.hotelId) {
+        // 价格变化：重新加载该酒店数据
+        publicHotelApi.getById(event.hotelId).then((updatedHotel) => {
+          setList((prev) => 
+            prev.map((h) => (h.id === event.hotelId ? updatedHotel : h))
+          );
+        }).catch(() => {
+          // 静默失败
+        });
+      } else if (event.changeKind === 'hotel_updated' && event.hotelId) {
+        // 酒店信息更新：重新加载该酒店数据
+        publicHotelApi.getById(event.hotelId).then((updatedHotel) => {
+          setList((prev) => 
+            prev.map((h) => (h.id === event.hotelId ? updatedHotel : h))
+          );
+        }).catch(() => {
+          // 静默失败
+        });
+      } else if (event.changeKind === 'hotel_online' && event.hotelId) {
+        // 酒店上线：如果不在列表中，重新加载整个列表
+        const exists = list.some((h) => h.id === event.hotelId);
+        if (!exists) {
+          reload();
+        }
+      } else if (event.changeKind === 'hotel_offline' && event.hotelId) {
+        // 酒店下线：从列表中移除
+        setList((prev) => prev.filter((h) => h.id !== event.hotelId));
+        setTotal((prev) => Math.max(0, prev - 1));
+      } else if (event.changeKind === 'hotel_hidden' && event.hotelId) {
+        // 酒店隐藏：从列表中移除
+        setList((prev) => prev.filter((h) => h.id !== event.hotelId));
+        setTotal((prev) => Math.max(0, prev - 1));
+      }
+    }, [list, reload]),
+    true // 启用 SSE
+  );
 
   // 提取快捷标签
   React.useEffect(() => {
