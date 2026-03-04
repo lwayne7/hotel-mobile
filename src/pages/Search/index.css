@@ -461,24 +461,36 @@
 
 /* Chips */
 .ctrip-city-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 8px;
 }
 
 .ctrip-chip {
-  padding: 6px 14px;
+  padding: 8px 12px;
   background: #fff;
   border-radius: 18px;
   font-size: 13px;
   color: #333;
   border: 1px solid transparent;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ctrip-chip:hover {
   color: var(--ctrip-blue);
   border-color: var(--ctrip-blue-light);
   background: var(--ctrip-blue-light);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 134, 246, 0.15);
+}
+
+.ctrip-chip:active {
+  transform: translateY(0);
 }
 
 /* Banner Scroll */
