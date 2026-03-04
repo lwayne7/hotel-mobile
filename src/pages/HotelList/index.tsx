@@ -167,6 +167,9 @@ const HotelList: React.FC = () => {
       return;
     }
     
+    // 先滚动到顶部（无论是否切换排序）
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     setSortBy(sortKey);
     
     // 对当前列表进行排序
@@ -197,9 +200,6 @@ const HotelList: React.FC = () => {
     }
     
     setList(sortedList);
-    
-    // 排序后滚动到顶部
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     
     message.success(`已按${SORT_OPTIONS.find(o => o.key === sortKey)?.label}排序`, 0.5);
   };
