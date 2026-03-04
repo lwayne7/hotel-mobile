@@ -3,3 +3,4 @@ export { useHotelPrice } from './useHotelPrice';
 export { useDateSelection } from './useDateSelection';
 export { useCitySelection } from './useCitySelection';
 export { usePriceUpdates } from './usePriceUpdates';
+export { useCityLocation } from './useCityLocation';
